@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#070b12] text-slate-100 antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #1e293b #0a0f1d;
+  }
+  *::-webkit-scrollbar { width: 5px; height: 5px; }
+  *::-webkit-scrollbar-track { background: #0a0f1d; }
+  *::-webkit-scrollbar-thumb { background-color: #334155; border-radius: 4px; }
+  *::-webkit-scrollbar-thumb:hover { background-color: #475569; }
+}

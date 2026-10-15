@@ -1,0 +1,42 @@
+{
+  "model_type": "IsolationForest",
+  "version": "1.1.0",
+  "currency": "INR",
+  "algorithm": "Unsupervised Tree-based Anomaly Isolation",
+  "trained_at": "2026-10-14T13:24:19.181667",
+  "dataset_type": "synthetic_digital_payments",
+  "synthetic_data_disclaimer": "Metrics are evaluated strictly on synthetic demonstration data and do not establish live production fraud performance.",
+  "training_samples": 4500,
+  "holdout_samples": 1500,
+  "holdout_fraud_samples": 69,
+  "contamination": 0.045,
+  "features": [
+    "amount_normalized",
+    "amount_zscore_clamped",
+    "is_high_amount",
+    "is_suspicious_channel",
+    "is_unusual_hour",
+    "is_round_amount",
+    "velocity_score",
+    "recent_failures_ratio"
+  ],
+  "metrics": {
+    "precision": 0.9583,
+    "recall": 1.0,
+    "f1_score": 0.9787,
+    "false_positive_rate": 0.0021,
+    "roc_auc": 0.9999,
+    "pr_auc": 0.9983,
+    "confusion_matrix": {
+      "true_negatives": 1428,
+      "false_positives": 3,
+      "false_negatives": 0,
+      "true_positives": 69
+    }
+  },
+  "score_calibration": {
+    "decision_min": -0.12704453746685995,
+    "decision_max": 0.3173638763230921,
+    "anomaly_threshold_50": 64.14
+  }
+}

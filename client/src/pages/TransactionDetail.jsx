@@ -1,0 +1,491 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import {
+  ArrowLeft,
+  ExternalLink,
+  ShieldAlert,
+  ShieldCheck,
+  Ban,
+  FolderOpen,
+  Cpu,
+  Clock,
+  Smartphone,
+  CreditCard,
+  User,
+  AlertTriangle,
+  CheckCircle2,
+  FileText,
+} from 'lucide-react';
+import api from '../services/api';
+import { Badge } from '../components/ui/Badge';
+import { RiskBadge } from '../components/ui/RiskBadge';
+import { StatusBadge } from '../components/ui/StatusBadge';
+import { Card, CardHeader, CardTitle } from '../components/ui/Card';
+import { RiskScore } from '../components/ui/RiskScore';
+import { RiskMeter } from '../components/ui/RiskMeter';
+import { BehavioralComparison } from '../components/ui/BehavioralComparison';
+import { DetectionTimeline } from '../components/ui/DetectionTimeline';
+import { Modal } from '../components/ui/Modal';
+import { Button } from '../components/ui/Button';
+import { Textarea, Select } from '../components/ui/Input';
+import { Skeleton } from '../components/ui/EmptyState';
+import toast from 'react-hot-toast';
+import { format } from 'date-fns';
+import { formatINR } from '../utils/currency';
+
+export default function TransactionDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  const [showCaseModal, setShowCaseModal] = useState(false);
+  const [caseForm, setCaseForm] = useState({ title: '', description: '', priority: 'high' });
+  const [creatingCase, setCreatingCase] = useState(false);
+
+  const fetchTransaction = async () => {
+    try {
+      const res = await api.get(`/transactions/${id}`);
+      setData(res.data.data);
+    } catch {
+      toast.error('Failed to load transaction intelligence');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTransaction();
+  }, [id]);
+
+  const handleUpdateStatus = async (newStatus) => {
+    setUpdating(true);
+    try {
+      await api.patch(`/transactions/${id}/status`, {
+        status: newStatus,
+        reviewStatus: 'reviewed',
+        notes: `Analyst updated status to ${newStatus} directly from transaction risk review.`,
+      });
+      toast.success(
+        newStatus === 'blocked'
+          ? 'Transaction blocked successfully.'
+          : newStatus === 'approved'
+          ? 'Transaction approved & cleared.'
+          : 'Transaction status updated.'
+      );
+      fetchTransaction();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update transaction status');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleCreateCase = async () => {
+    if (!caseForm.title.trim()) return;
+    setCreatingCase(true);
+    try {
+      const res = await api.post('/cases', {
+        title: caseForm.title,
+        description: caseForm.description,
+        transactionIds: [id],
+        priority: caseForm.priority,
+      });
+      toast.success('Investigation case created successfully.');
+      setShowCaseModal(false);
+      navigate(`/cases/${res.data.data._id}`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to create case');
+    } finally {
+      setCreatingCase(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-5">
+        <Skeleton className="h-10 w-72" />
+        <Skeleton className="h-44 rounded-2xl" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <Skeleton className="lg:col-span-2 h-96 rounded-2xl" />
+          <Skeleton className="h-96 rounded-2xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!data || !data.transaction) {
+    return (
+      <div className="p-8 text-center text-slate-400">
+        Transaction record not found.
+      </div>
+    );
+  }
+
+  const { transaction: tx, alerts = [], assessments = [], behavioralProfile } = data;
+  const isHighRisk = (tx.riskScore || 0) >= 55;
+  const isCritical = (tx.riskScore || 0) >= 80;
+
+  // Generate explainable risk recommendation based on actual data
+  let recommendation = 'Low risk profile. Transaction nominal for processing.';
+  let recommendedAction = 'Approve & Clear';
+  if (isCritical) {
+    recommendation =
+      'Multiple critical anomaly thresholds exceeded. Significant deviation from baseline behavior indicates high likelihood of unauthorized or compromised payment instrument.';
+    recommendedAction = 'Immediate Interception & Account Hold';
+  } else if (isHighRisk) {
+    recommendation =
+      'Elevated risk score driven by heuristic signals or unusual behavioral attributes. Requires analyst verification before transaction completion.';
+    recommendedAction = 'Escalate to Fraud Investigation Case';
+  } else if (tx.riskScore >= 25) {
+    recommendation =
+      'Moderate risk flags detected. Transaction exceeds minor monitoring thresholds.';
+    recommendedAction = 'Monitor Customer Activity';
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* 1. Header Navigation & Top Status Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
+        <div className="flex items-center gap-3">
+          <Link
+            to="/transactions"
+            className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          >
+            <ArrowLeft size={18} />
+          </Link>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl font-bold text-white font-mono">{tx.transactionId}</h1>
+              <StatusBadge status={tx.status} />
+              {tx.isDemo && (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400">
+                  DEMO DATA
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-400">
+              Evaluated on {tx.timestamp ? format(new Date(tx.timestamp), 'PPpp') : '—'}
+            </p>
+          </div>
+        </div>
+
+        {/* Quick Action Remediations */}
+        <div className="flex items-center gap-2">
+          {tx.status !== 'blocked' && (
+            <button
+              onClick={() => handleUpdateStatus('blocked')}
+              disabled={updating}
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-400 bg-rose-950/60 border border-rose-800/80 hover:bg-rose-900/60 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <Ban size={13} /> Block Transaction
+            </button>
+          )}
+
+          {tx.status !== 'approved' && (
+            <button
+              onClick={() => handleUpdateStatus('approved')}
+              disabled={updating}
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold text-emerald-400 bg-emerald-950/60 border border-emerald-800/80 hover:bg-emerald-900/60 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <ShieldCheck size={13} /> Approve
+            </button>
+          )}
+
+          <button
+            onClick={() => {
+              setCaseForm({
+                title: `Investigation: ${tx.transactionId} (${formatINR(tx.amount, tx.currency || '')})`,
+                description: `Initiated for customer ${tx.customerId}. Triggered ${tx.riskReasons?.length || 0} risk rules. Risk score: ${tx.riskScore}/100.`,
+                priority: isCritical ? 'critical' : isHighRisk ? 'high' : 'medium',
+              });
+              setShowCaseModal(true);
+            }}
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold text-cyan-300 bg-cyan-950/60 border border-cyan-800/80 hover:bg-cyan-900/60 transition-colors flex items-center gap-1.5"
+          >
+            <FolderOpen size={13} /> Open Investigation Case
+          </button>
+        </div>
+      </div>
+
+      {/* 2. Prominent Risk Header & Score Banner (Section 16 & 17) */}
+      <div
+        className={`p-6 rounded-2xl border backdrop-blur transition-all ${
+          isCritical
+            ? 'bg-gradient-to-r from-red-950/40 via-slate-900 to-slate-900 border-red-900/60'
+            : isHighRisk
+            ? 'bg-gradient-to-r from-orange-950/30 via-slate-900 to-slate-900 border-orange-900/50'
+            : 'bg-slate-900/80 border-slate-800'
+        }`}
+      >
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-3 flex-1">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="text-xs font-mono uppercase tracking-widest text-slate-400 font-semibold">
+                Risk Engine Evaluation
+              </span>
+              <RiskBadge level={tx.riskLevel} score={tx.riskScore} size="lg" />
+              <span className="text-xs font-mono text-cyan-400 bg-cyan-950/80 border border-cyan-800/60 px-2 py-0.5 rounded">
+                Source: {tx.assessmentSource?.toUpperCase() || 'RULES_ENGINE'}
+              </span>
+            </div>
+
+            <div className="flex items-baseline gap-3">
+              <span className="text-3xl lg:text-4xl font-extrabold text-white font-mono">
+                {formatINR(tx.amount, tx.currency || '')}
+              </span>
+              <span className="text-sm font-mono text-slate-400 uppercase">
+                via {tx.channel?.replace(/_/g, ' ') || 'card'}
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed max-w-2xl">
+              {recommendation}
+            </p>
+          </div>
+
+          {/* Visual Risk Gauge */}
+          <div className="flex items-center gap-6 lg:border-l border-slate-800 lg:pl-8">
+            <RiskScore score={tx.riskScore} size="xl" subtitle="Calculated Risk" />
+          </div>
+        </div>
+
+        {/* Risk meter horizontal indicator */}
+        <div className="mt-5 pt-4 border-t border-slate-800/80">
+          <RiskMeter score={tx.riskScore} />
+        </div>
+      </div>
+
+      {/* 3. Explainable Fraud Detection Factors (Section 16 & 20) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Left: Why Was This Transaction Flagged? */}
+        <Card className="lg:col-span-2 space-y-4">
+          <CardHeader>
+            <div>
+              <CardTitle>WHY WAS THIS TRANSACTION FLAGGED?</CardTitle>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Explainable heuristic rules and statistical signals contributing to risk score
+              </p>
+            </div>
+            <span className="text-xs font-mono font-bold text-amber-400 bg-amber-950/60 px-2.5 py-1 rounded border border-amber-800/60">
+              {tx.riskReasons?.length || 0} Triggered Factors
+            </span>
+          </CardHeader>
+
+          {tx.riskReasons && tx.riskReasons.length > 0 ? (
+            <div className="space-y-3">
+              {tx.riskReasons.map((r, i) => (
+                <div
+                  key={i}
+                  className="p-4 rounded-xl bg-slate-950/70 border border-slate-800/90 hover:border-slate-700 transition-colors space-y-1.5"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-mono font-bold text-cyan-400 tracking-wide">
+                      {r.rule}
+                    </span>
+                    <span className="text-xs font-mono font-extrabold text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800">
+                      +{r.score} PTS
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 leading-relaxed">{r.description}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center bg-slate-950/40 rounded-xl border border-slate-800/80">
+              <CheckCircle2 size={32} className="mx-auto text-emerald-400 mb-2" />
+              <p className="text-sm font-semibold text-slate-200">No Risk Rules Triggered</p>
+              <p className="text-xs text-slate-400 mt-1">
+                Transaction strictly complied with all active heuristic limits, amount thresholds, and velocity windows.
+              </p>
+            </div>
+          )}
+
+          {/* ML Anomaly Model Insights (if ML Service was used) */}
+          {tx.mlScore !== null && tx.mlScore !== undefined && (
+            <div className="mt-4 p-4 rounded-xl bg-gradient-to-br from-purple-950/30 via-slate-950 to-slate-950 border border-purple-900/50 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Cpu size={16} className="text-purple-400" />
+                  <span className="text-xs font-mono font-bold text-slate-200">
+                    ML ISOLATION FOREST ANOMALY INFERENCE
+                  </span>
+                </div>
+                <span
+                  className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded border ${
+                    tx.mlDecision === 'anomalous'
+                      ? 'bg-rose-950 text-rose-400 border-rose-800'
+                      : 'bg-emerald-950 text-emerald-400 border-emerald-800'
+                  }`}
+                >
+                  {tx.mlDecision?.toUpperCase()}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-baseline text-xs text-slate-400">
+                <span>Model Anomaly Score:</span>
+                <span className="text-sm font-mono font-extrabold text-purple-300">
+                  {tx.mlScore} / 100
+                </span>
+              </div>
+
+              {tx.mlExplanation && tx.mlExplanation.length > 0 && (
+                <div className="pt-2 border-t border-purple-900/40 space-y-1">
+                  <p className="text-[11px] font-mono text-slate-400">Model Feature Contributions:</p>
+                  <ul className="text-xs text-slate-300 space-y-1 list-disc list-inside">
+                    {tx.mlExplanation.map((exp, idx) => (
+                      <li key={idx}>{exp}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </Card>
+
+        {/* Right: Risk Explanation & Analyst Recommendation */}
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>INVESTIGATOR ACTION ADVISORY</CardTitle>
+            </CardHeader>
+            <div className="space-y-4 text-xs">
+              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1.5">
+                <span className="text-[10px] font-mono uppercase text-slate-500 font-semibold block">
+                  Recommended Outcome
+                </span>
+                <p className="text-sm font-bold text-cyan-400 font-mono">{recommendedAction}</p>
+                <p className="text-slate-400 leading-relaxed mt-1">
+                  Based on deterministic heuristic scoring ({tx.riskScore}/100) and customer baseline telemetry.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-[11px] font-mono uppercase text-slate-500 font-semibold">
+                  Transaction Metadata
+                </p>
+                <div className="divide-y divide-slate-800/80 text-xs">
+                  <div className="flex justify-between py-2">
+                    <span className="text-slate-500">Customer ID</span>
+                    <Link
+                      to={`/customers/${tx.customerId}`}
+                      className="font-mono text-cyan-400 hover:underline"
+                    >
+                      {tx.customerId}
+                    </Link>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-slate-500">Merchant Category</span>
+                    <span className="font-mono text-slate-300 capitalize">{tx.merchantCategory || 'Standard'}</span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-slate-500">Merchant ID</span>
+                    <span className="font-mono text-slate-300">{tx.merchantId || 'MERCH-UNSPECIFIED'}</span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-slate-500">Ingestion Pipeline</span>
+                    <span className="font-mono text-slate-300 capitalize">{tx.ingestionSource?.replace(/_/g, ' ')}</span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-slate-500">Review State</span>
+                    <span className="font-mono text-slate-300 capitalize">{tx.reviewStatus?.replace(/_/g, ' ')}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      {/* 4. Customer Behaviour Analysis (Section 18) */}
+      <Card>
+        <BehavioralComparison
+          transaction={tx}
+          behavioralProfile={behavioralProfile}
+        />
+      </Card>
+
+      {/* 5. Detection Lifecycle Timeline (Section 19) */}
+      <Card>
+        <DetectionTimeline
+          transaction={tx}
+          alerts={alerts}
+          assessments={assessments}
+        />
+      </Card>
+
+      {/* 6. Linked Alerts */}
+      {alerts && alerts.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div>
+              <CardTitle>ASSOCIATED THREAT ALERTS ({alerts.length})</CardTitle>
+              <p className="text-xs text-slate-400 mt-0.5">Deduplicated alerts triggered by this transaction</p>
+            </div>
+          </CardHeader>
+          <div className="space-y-2">
+            {alerts.map((a) => (
+              <Link
+                key={a._id}
+                to={`/alerts/${a._id}`}
+                className="flex items-center justify-between p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl hover:border-slate-700 transition-colors"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-slate-200">{a.title}</p>
+                  <p className="text-xs font-mono text-slate-500">{a.alertId}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RiskBadge level={a.severity} size="sm" />
+                  <StatusBadge status={a.status} size="sm" />
+                  <ExternalLink size={13} className="text-slate-500 ml-2" />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Create Case Modal */}
+      <Modal isOpen={showCaseModal} onClose={() => setShowCaseModal(false)} title="Open Investigation Case">
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-400">Case Title *</label>
+            <input
+              value={caseForm.title}
+              onChange={(e) => setCaseForm({ ...caseForm, title: e.target.value })}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            />
+          </div>
+
+          <Select
+            label="Investigation Priority"
+            value={caseForm.priority}
+            onChange={(e) => setCaseForm({ ...caseForm, priority: e.target.value })}
+          >
+            <option value="critical">Critical Priority</option>
+            <option value="high">High Priority</option>
+            <option value="medium">Medium Priority</option>
+            <option value="low">Low Priority</option>
+          </Select>
+
+          <Textarea
+            label="Initial Findings & Context"
+            value={caseForm.description}
+            onChange={(e) => setCaseForm({ ...caseForm, description: e.target.value })}
+            rows={4}
+            placeholder="Record initial fraud hypotheses, unusual velocity patterns, or customer contact notes..."
+          />
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+            <Button variant="secondary" size="sm" onClick={() => setShowCaseModal(false)}>
+              Cancel
+            </Button>
+            <Button size="sm" loading={creatingCase} onClick={handleCreateCase} disabled={!caseForm.title.trim()}>
+              Open Case
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
+}
