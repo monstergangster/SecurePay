@@ -6,12 +6,7 @@ import {
   Plus,
   RefreshCw,
   ArrowLeftRight,
-  ShieldCheck,
-  ShieldAlert,
-  AlertTriangle,
-  Ban,
   Eye,
-  Calendar,
 } from 'lucide-react';
 import api from '../services/api';
 import { RiskBadge } from '../components/ui/RiskBadge';
@@ -20,6 +15,7 @@ import { Button } from '../components/ui/Button';
 import { Select, Input } from '../components/ui/Input';
 import { Pagination } from '../components/ui/Pagination';
 import { EmptyState, TableSkeleton } from '../components/ui/EmptyState';
+import { PageHeader } from '../components/ui/PageHeader';
 import { Modal } from '../components/ui/Modal';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -118,6 +114,9 @@ export default function Transactions() {
   const [showFilters, setShowFilters] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [kpi, setKpi] = useState({ total: 0, approved: 0, flagged: 0, highRisk: 0, blocked: 0 });
+  const [kpiAvailable, setKpiAvailable] = useState(false);
+  const [transactionError, setTransactionError] = useState('');
+  const [analyticsError, setAnalyticsError] = useState('');
   const [filters, setFilters] = useState({
     search: '',
     status: '',
@@ -134,41 +133,54 @@ export default function Transactions() {
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
-    try {
-      const p = { page, limit: 20 };
-      if (filters.search) {
-        p.transactionId = filters.search;
-        p.customerId = filters.search;
-      }
-      if (filters.status) p.status = filters.status;
-      if (filters.riskLevel) p.riskLevel = filters.riskLevel;
-      if (filters.channel) p.channel = filters.channel;
-      if (filters.dateFrom) p.dateFrom = filters.dateFrom;
-      if (filters.dateTo) p.dateTo = filters.dateTo;
-
-      const [res, dashRes] = await Promise.all([
-        api.get('/transactions', { params: p }),
-        api.get('/analytics/dashboard'),
-      ]);
-
-      setTxs(res.data.data || []);
-      setMeta(res.data.meta);
-
-      if (dashRes.data?.data?.summary) {
-        const s = dashRes.data.data.summary;
-        setKpi({
-          total: s.totalTx || 0,
-          approved: s.approvedTx || 0,
-          flagged: s.flaggedTx || 0,
-          highRisk: (s.flaggedTx || 0) + (s.blockedTx || 0),
-          blocked: s.blockedTx || 0,
-        });
-      }
-    } catch {
-      toast.error('Failed to load transaction monitor data');
-    } finally {
-      setLoading(false);
+    setTransactionError('');
+    setAnalyticsError('');
+    const p = { page, limit: 20 };
+    if (filters.search) {
+      p.transactionId = filters.search;
+      p.customerId = filters.search;
     }
+    if (filters.status) p.status = filters.status;
+    if (filters.riskLevel) p.riskLevel = filters.riskLevel;
+    if (filters.channel) p.channel = filters.channel;
+    if (filters.dateFrom) p.dateFrom = filters.dateFrom;
+    if (filters.dateTo) p.dateTo = filters.dateTo;
+
+    const [transactionsResult, dashboardResult] = await Promise.allSettled([
+      api.get('/transactions', { params: p }),
+      api.get('/analytics/dashboard'),
+    ]);
+
+    if (transactionsResult.status === 'fulfilled' && Array.isArray(transactionsResult.value.data?.data)) {
+      setTxs(transactionsResult.value.data.data);
+      setMeta(transactionsResult.value.data.meta);
+    } else {
+      const error = transactionsResult.status === 'rejected'
+        ? transactionsResult.reason
+        : new Error('The transaction service returned an unexpected response.');
+      setTxs([]);
+      setMeta(null);
+      setTransactionError(
+        error.response?.data?.message || error.message || 'Unable to load transactions. Try again.'
+      );
+      toast.error('Failed to load transactions');
+    }
+
+    if (dashboardResult.status === 'fulfilled' && dashboardResult.value.data?.data?.summary) {
+      const s = dashboardResult.value.data.data.summary;
+      setKpi({
+        total: s.totalTx || 0,
+        approved: s.approvedTx || 0,
+        flagged: s.flaggedTx || 0,
+        highRisk: (s.flaggedTx || 0) + (s.blockedTx || 0),
+        blocked: s.blockedTx || 0,
+      });
+      setKpiAvailable(true);
+    } else {
+      setKpiAvailable(false);
+      setAnalyticsError('Transaction summary metrics are currently unavailable.');
+    }
+    setLoading(false);
   }, [page, filters]);
 
   useEffect(() => {
@@ -178,55 +190,51 @@ export default function Transactions() {
   return (
     <div className="space-y-6">
       {/* 1. Header & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-white tracking-tight">Transaction Monitor</h1>
-            <span className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-cyan-950 text-cyan-400 border border-cyan-800">
-              AUDITED FLOW
-            </span>
-          </div>
-          <p className="text-xs text-slate-400">
-            Real-time transaction surveillance, heuristic rule evaluations, and settlement interception.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title="Transactions"
+        description="Search payment activity and review its current status and risk assessment."
+        actions={(
+          <>
           <Button size="sm" onClick={() => setShowNew(true)} className="text-xs">
-            <Plus size={14} /> Ingest Demo Tx
+            <Plus size={14} /> Add demo transaction
           </Button>
           <button
             onClick={fetchTransactions}
+            type="button"
+            aria-label="Refresh transactions"
             className="p-2 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white rounded-xl transition-colors"
           >
             <RefreshCw size={13} className={loading ? 'animate-spin text-cyan-400' : ''} />
           </button>
-        </div>
-      </div>
+          </>
+        )}
+      />
 
       {/* 2. KPI Strip (Section 15) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800">
           <p className="text-[10px] font-mono uppercase text-slate-400 font-semibold mb-1">Total Monitored</p>
-          <p className="text-2xl font-bold font-mono text-white">{kpi.total.toLocaleString()}</p>
+          <p className="text-2xl font-bold font-mono text-white">{kpiAvailable ? kpi.total.toLocaleString() : '—'}</p>
         </div>
         <div className="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-900/40">
           <p className="text-[10px] font-mono uppercase text-emerald-400 font-semibold mb-1">Normal / Approved</p>
-          <p className="text-2xl font-bold font-mono text-emerald-300">{kpi.approved.toLocaleString()}</p>
+          <p className="text-2xl font-bold font-mono text-emerald-300">{kpiAvailable ? kpi.approved.toLocaleString() : '—'}</p>
         </div>
         <div className="p-3.5 rounded-xl bg-amber-950/20 border border-amber-900/40">
           <p className="text-[10px] font-mono uppercase text-amber-400 font-semibold mb-1">Flagged Suspicious</p>
-          <p className="text-2xl font-bold font-mono text-amber-300">{kpi.flagged.toLocaleString()}</p>
+          <p className="text-2xl font-bold font-mono text-amber-300">{kpiAvailable ? kpi.flagged.toLocaleString() : '—'}</p>
         </div>
         <div className="p-3.5 rounded-xl bg-orange-950/20 border border-orange-900/40">
           <p className="text-[10px] font-mono uppercase text-orange-400 font-semibold mb-1">Elevated Risk</p>
-          <p className="text-2xl font-bold font-mono text-orange-300">{kpi.highRisk.toLocaleString()}</p>
+          <p className="text-2xl font-bold font-mono text-orange-300">{kpiAvailable ? kpi.highRisk.toLocaleString() : '—'}</p>
         </div>
         <div className="p-3.5 rounded-xl bg-rose-950/25 border border-rose-900/50">
           <p className="text-[10px] font-mono uppercase text-rose-400 font-semibold mb-1">Blocked Intercepts</p>
-          <p className="text-2xl font-bold font-mono text-rose-300">{kpi.blocked.toLocaleString()}</p>
+          <p className="text-2xl font-bold font-mono text-rose-300">{kpiAvailable ? kpi.blocked.toLocaleString() : '—'}</p>
         </div>
       </div>
+      {analyticsError && <p role="status" className="text-xs text-amber-300">{analyticsError} The transaction list is still available.</p>}
+      {transactionError && <p role="alert" className="text-sm text-rose-300">{transactionError}</p>}
 
       {/* 3. Search & Filter Bar */}
       <div className="space-y-3">
@@ -318,6 +326,15 @@ export default function Transactions() {
                 <tr>
                   <td colSpan={8}>
                     <TableSkeleton rows={8} cols={8} />
+                  </td>
+                </tr>
+              ) : transactionError ? (
+                <tr>
+                  <td colSpan={8} className="p-6 text-center">
+                    <p className="text-sm text-rose-300">{transactionError}</p>
+                    <button type="button" onClick={fetchTransactions} className="mt-3 text-xs font-semibold text-cyan-300 hover:text-cyan-200">
+                      Retry
+                    </button>
                   </td>
                 </tr>
               ) : txs.length === 0 ? (

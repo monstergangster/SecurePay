@@ -4,24 +4,21 @@ import {
   RefreshCw,
   CheckCircle2,
   XCircle,
-  Sliders,
-  ShieldCheck,
-  ShieldAlert,
-  Zap,
   Edit2,
-  Info,
 } from 'lucide-react';
 import api from '../services/api';
 import { Button } from '../components/ui/Button';
 import { Input, Select, Textarea } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { EmptyState, TableSkeleton } from '../components/ui/EmptyState';
+import { PageHeader } from '../components/ui/PageHeader';
 import toast from 'react-hot-toast';
 import { formatINR } from '../utils/currency';
 
 export default function Rules() {
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [selectedRule, setSelectedRule] = useState(null);
   const [showEdit, setShowEdit] = useState(false);
   const [form, setForm] = useState({ weight: 0, threshold: '', isActive: true, description: '' });
@@ -29,10 +26,13 @@ export default function Rules() {
 
   const fetchRules = async () => {
     setLoading(true);
+    setError('');
     try {
       const res = await api.get('/rules');
       setRules(res.data.data || []);
     } catch {
+      setRules([]);
+      setError('Unable to load detection rules. Check your access and connection, then try again.');
       toast.error('Failed to load detection engine heuristics');
     } finally {
       setLoading(false);
@@ -82,27 +82,21 @@ export default function Rules() {
 
   return (
     <div className="space-y-6">
-      {/* 1. Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-white tracking-tight">Detection Engine</h1>
-            <span className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-cyan-950 text-cyan-400 border border-cyan-800">
-              REAL-TIME HEURISTICS
-            </span>
-          </div>
-          <p className="text-xs text-slate-400">
-            Configure automated transaction evaluation rules, anomaly weight contributions, and trigger thresholds.
-          </p>
-        </div>
-
-        <button
-          onClick={fetchRules}
-          className="p-2 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white rounded-xl transition-colors self-start sm:self-auto"
-        >
-          <RefreshCw size={13} className={loading ? 'animate-spin text-cyan-400' : ''} />
-        </button>
-      </div>
+      <PageHeader
+        title="Detection Rules"
+        description="Review and adjust the rules that assess payment risk."
+        actions={(
+          <button
+            type="button"
+            onClick={fetchRules}
+            aria-label="Refresh detection rules"
+            className="p-2 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white rounded-xl transition-colors"
+          >
+            <RefreshCw size={13} className={loading ? 'animate-spin text-cyan-400' : ''} />
+          </button>
+        )}
+      />
+      {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
 
       {/* 2. Top Engine Status Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -110,7 +104,7 @@ export default function Rules() {
           <p className="text-[11px] font-mono uppercase text-slate-400 font-semibold mb-1">Active Rules</p>
           <div className="flex items-baseline justify-between">
             <span className="text-2xl font-bold font-mono text-emerald-400">
-              {activeCount} <span className="text-xs text-slate-500 font-normal">/ {rules.length} configured</span>
+              {error ? '—' : activeCount} <span className="text-xs text-slate-500 font-normal">/ {error ? '—' : rules.length} configured</span>
             </span>
             <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
               Active
@@ -121,7 +115,7 @@ export default function Rules() {
         <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800">
           <p className="text-[11px] font-mono uppercase text-slate-400 font-semibold mb-1">Cumulative Triggers</p>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-bold font-mono text-amber-400">{totalTriggers.toLocaleString()}</span>
+            <span className="text-2xl font-bold font-mono text-amber-400">{error ? '—' : totalTriggers.toLocaleString()}</span>
             <span className="text-[10px] font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
               All Rules
             </span>
@@ -159,6 +153,15 @@ export default function Rules() {
                 <tr>
                   <td colSpan={7}>
                     <TableSkeleton rows={6} cols={7} />
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={7} className="p-6 text-center">
+                    <p className="text-sm text-rose-300">{error}</p>
+                    <button type="button" onClick={fetchRules} className="mt-3 text-xs font-semibold text-cyan-300 hover:text-cyan-200">
+                      Retry
+                    </button>
                   </td>
                 </tr>
               ) : rules.length === 0 ? (

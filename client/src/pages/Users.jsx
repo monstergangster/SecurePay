@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { UserPlus, UserCog, RefreshCw, CheckCircle2, XCircle, Shield, Lock } from 'lucide-react';
+import { UserPlus, UserCog, RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
 import api from '../services/api';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Button } from '../components/ui/Button';
@@ -8,20 +8,25 @@ import { Modal } from '../components/ui/Modal';
 import { EmptyState, TableSkeleton } from '../components/ui/EmptyState';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+import { PageHeader } from '../components/ui/PageHeader';
 
 export default function Users() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'analyst' });
   const [submitting, setSubmitting] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
+    setError('');
     try {
       const res = await api.get('/users');
       setUsers(res.data.data || []);
     } catch {
+      setUsers([]);
+      setError('Unable to load user accounts. Check your administrator access and connection, then try again.');
       toast.error('Failed to load user access accounts');
     } finally {
       setLoading(false);
@@ -60,32 +65,26 @@ export default function Users() {
 
   return (
     <div className="space-y-6">
-      {/* 1. Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-white tracking-tight">User & Role Management</h1>
-            <span className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-purple-950 text-purple-400 border border-purple-800">
-              RBAC ACCESS
-            </span>
-          </div>
-          <p className="text-xs text-slate-400">
-            Provision and audit credentials for fraud analysts and platform administrators.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title="Users and Access"
+        description="Manage analyst and administrator accounts and their access status."
+        actions={(
+          <>
           <Button size="sm" onClick={() => setShowAdd(true)} className="text-xs">
-            <UserPlus size={14} /> Provision Account
+            <UserPlus size={14} /> Add user
           </Button>
           <button
             onClick={fetchUsers}
+            type="button"
+            aria-label="Refresh users"
             className="p-2 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white rounded-xl transition-colors"
           >
             <RefreshCw size={13} className={loading ? 'animate-spin text-cyan-400' : ''} />
           </button>
-        </div>
-      </div>
+          </>
+        )}
+      />
+      {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
 
       {/* 2. Users Table */}
       <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
@@ -106,6 +105,15 @@ export default function Users() {
                 <tr>
                   <td colSpan={6}>
                     <TableSkeleton rows={4} cols={6} />
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={6} className="p-6 text-center">
+                    <p className="text-sm text-rose-300">{error}</p>
+                    <button type="button" onClick={fetchUsers} className="mt-3 text-xs font-semibold text-cyan-300 hover:text-cyan-200">
+                      Retry
+                    </button>
                   </td>
                 </tr>
               ) : users.length === 0 ? (

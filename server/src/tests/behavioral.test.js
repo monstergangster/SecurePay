@@ -134,5 +134,18 @@ describe('Phase 4: Customer Behavioural Analytics Tests', () => {
       expect(profileRich.signals.some((s) => s.signal.includes('AMOUNT_'))).toBe(false);
       expect(profileRegular.behavioralRiskContribution).toBeGreaterThan(profileRich.behavioralRiskContribution);
     });
+
+    it('should surface history lookup failures instead of treating the customer as new', async () => {
+      jest.spyOn(Transaction, 'find').mockReturnValue({
+        sort: jest.fn().mockReturnThis(),
+        select: jest.fn().mockRejectedValue(new Error('MongoDB unavailable')),
+      });
+
+      await expect(extractCustomerBehavioralFeatures({
+        customerId: 'CUST-DB-ERROR',
+        amount: 100,
+        timestamp: new Date(),
+      })).rejects.toThrow('MongoDB unavailable');
+    });
   });
 });

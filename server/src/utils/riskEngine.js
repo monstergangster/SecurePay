@@ -295,25 +295,21 @@ const fullAssessment = async (transaction, options = {}) => {
       // Incorporate customer-level behavioral context when enabled
       let behavioralProfile = null;
       if (options.enableBehavioral !== false) {
-        try {
-          const { extractCustomerBehavioralFeatures } = require('./behavioralAnalytics');
-          behavioralProfile = await extractCustomerBehavioralFeatures(transaction);
-          if (behavioralProfile && behavioralProfile.signals) {
-            for (const sig of behavioralProfile.signals) {
-              triggeredRules.push({
-                rule: sig.signal,
-                score: sig.weight,
-                description: sig.description,
-              });
-              totalRuleScore += sig.weight;
-            }
+        const { extractCustomerBehavioralFeatures } = require('./behavioralAnalytics');
+        behavioralProfile = await extractCustomerBehavioralFeatures(transaction);
+        if (behavioralProfile && behavioralProfile.signals) {
+          for (const sig of behavioralProfile.signals) {
+            triggeredRules.push({
+              rule: sig.signal,
+              score: sig.weight,
+              description: sig.description,
+            });
+            totalRuleScore += sig.weight;
           }
-        } catch (bErr) {
-          logger.warn(`Behavioral analytics extraction warning: ${bErr.message}`);
         }
       }
 
-      const ruleScore = Math.min(100, Math.round(totalRuleScore));
+      const ruleScore = Math.min(100, Math.max(0, Math.round(totalRuleScore)));
 
       // Asynchronously update rule trigger counters without throwing
       for (const triggered of triggeredRules) {

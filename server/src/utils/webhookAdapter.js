@@ -57,9 +57,13 @@ class SecurePayStandardAdapter extends ProviderAdapter {
       return { valid: false, reason: 'Missing timestamp for replay attack protection' };
     }
 
-    const tsNum = parseInt(timestamp, 10);
+    if (!/^\d+$/.test(timestamp) || !/^[a-f\d]{64}$/i.test(signatureHex)) {
+      return { valid: false, reason: 'Signature encoding invalid' };
+    }
+
+    const tsNum = Number(timestamp);
     const now = Math.floor(Date.now() / 1000);
-    if (isNaN(tsNum) || Math.abs(now - tsNum) > 300) {
+    if (!Number.isSafeInteger(tsNum) || Math.abs(now - tsNum) > 300) {
       return { valid: false, reason: 'Webhook timestamp expired or outside replay tolerance window (300s)' };
     }
 
@@ -88,27 +92,42 @@ class SecurePayStandardAdapter extends ProviderAdapter {
     const eventType = body.eventType || body.type;
     const data = body.data || body;
 
-    if (!eventId) throw new Error('Missing unique eventId in webhook payload');
-    if (!eventType) throw new Error('Missing eventType in webhook payload');
+    if (typeof eventId !== 'string' || !eventId.trim() || eventId.length > 200) {
+      throw new Error('Webhook eventId must be a non-empty string of at most 200 characters');
+    }
+    if (typeof eventType !== 'string' || !eventType.trim() || eventType.length > 100) {
+      throw new Error('Webhook eventType must be a non-empty string of at most 100 characters');
+    }
+
+    const timestamp = data.timestamp ? new Date(data.timestamp) : new Date();
+    if (isNaN(timestamp.getTime())) throw new Error('Invalid transaction timestamp');
+    const channel = data.channel || 'other';
+    if (!['card', 'bank_transfer', 'upi', 'wallet', 'crypto', 'other'].includes(channel)) {
+      throw new Error('Unsupported transaction channel');
+    }
 
     const transaction = {
       transactionId: data.transactionId || data.id,
       customerId: data.customerId || data.customer,
       amount: normalizeAmount(data.amount),
       currency: normalizeCurrency(data.currency || 'INR'),
-      channel: data.channel || 'other',
-      timestamp: data.timestamp ? new Date(data.timestamp) : new Date(),
+      channel,
+      timestamp,
       merchantId: data.merchantId,
       merchantCategory: data.merchantCategory,
       deviceMetadata: data.deviceMetadata,
       ingestionSource: 'webhook',
     };
 
-    if (!transaction.transactionId) throw new Error('Missing transactionId in webhook data');
-    if (!transaction.customerId) throw new Error('Missing customerId in webhook data');
+    if (typeof transaction.transactionId !== 'string' || !transaction.transactionId.trim()) {
+      throw new Error('Missing transactionId in webhook data');
+    }
+    if (typeof transaction.customerId !== 'string' || !transaction.customerId.trim()) {
+      throw new Error('Missing customerId in webhook data');
+    }
     return {
-      eventId,
-      eventType,
+      eventId: eventId.trim(),
+      eventType: eventType.trim(),
       transaction,
     };
   }

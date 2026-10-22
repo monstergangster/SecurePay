@@ -7,44 +7,32 @@ const compression = require('compression');
 
 const connectDB = require('./config/database');
 const logger = require('./config/logger');
+const { getAllowedOrigins, validateSecurityEnvironment } = require('./config/security');
 const errorHandler = require('./middleware/errorHandler');
 const { apiLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
+const allowedOrigins = getAllowedOrigins();
 
 // Security middleware
 app.use(helmet());
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests from common dev ports and the configured FRONTEND_URL
-    const allowedOrigins = [
-      process.env.FRONTEND_URL || 'http://localhost:5173',
-      'http://localhost:5173',
-      'http://localhost:5174',
-      'http://localhost:5175',
-      'http://127.0.0.1:5173',
-      'http://127.0.0.1:5174',
-      'http://127.0.0.1:5175',
-    ];
-    // Allow requests with no origin (like curl, Postman, or server-to-server)
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(null, true); // In dev mode, allow all origins
-    }
+    if (!origin) return callback(null, true);
+    return callback(null, allowedOrigins.has(origin));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json({
-  limit: '10mb',
+  limit: '1mb',
   verify: (req, res, buf) => {
     req.rawBody = buf;
   },
 }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('combined', { stream: { write: (msg) => logger.info(msg.trim()) } }));
@@ -75,6 +63,7 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 const startServer = async () => {
+  validateSecurityEnvironment();
   await connectDB();
   app.listen(PORT, () => {
     logger.info(`SecurePay API running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
@@ -82,7 +71,10 @@ const startServer = async () => {
 };
 
 if (require.main === module) {
-  startServer();
+  startServer().catch((err) => {
+    logger.error(`SecurePay startup failed: ${err.message}`);
+    process.exitCode = 1;
+  });
 }
 
 module.exports = app;

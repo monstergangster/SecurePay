@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import toast from 'react-hot-toast';
 import {
   LayoutDashboard,
   ArrowLeftRight,
@@ -16,15 +17,19 @@ import {
   Shield,
   LogOut,
   X,
-  FileSpreadsheet,
 } from 'lucide-react';
 
-export const Sidebar = ({ isOpen, onClose }) => {
+export const Sidebar = ({ isOpen, onClose, collapsed = false }) => {
   const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await logout();
+    const auditRecorded = await logout();
+    if (auditRecorded) {
+      toast.success('Signed out locally. Any copied token remains valid until it expires.');
+    } else {
+      toast.error('Signed out locally, but the server could not record the logout. Any copied token remains valid until it expires.');
+    }
     navigate('/login');
   };
 
@@ -45,11 +50,11 @@ export const Sidebar = ({ isOpen, onClose }) => {
       ],
     },
     {
-      group: 'INTELLIGENCE',
+      group: 'INSIGHTS',
       items: [
         { label: 'Behaviour Analytics', to: '/analytics', icon: BarChart3 },
         ...(isAdmin
-          ? [{ label: 'Detection Engine', to: '/rules', icon: Cpu }]
+          ? [{ label: 'Rules', to: '/rules', icon: Cpu }]
           : []),
       ],
     },
@@ -59,7 +64,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
         { label: 'Data Import', to: '/import', icon: UploadCloud },
         ...(isAdmin
           ? [
-              { label: 'Audit Trail', to: '/audit', icon: ScrollText },
+              { label: 'Audit Logs', to: '/audit', icon: ScrollText },
               { label: 'Users', to: '/users', icon: UserCog },
             ]
           : []),
@@ -79,23 +84,23 @@ export const Sidebar = ({ isOpen, onClose }) => {
       )}
 
       <aside
-        className={`fixed top-0 bottom-0 left-0 w-64 bg-slate-950/95 border-r border-slate-800/90 flex flex-col z-50 transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
+        className={`fixed top-0 bottom-0 left-0 w-64 ${collapsed ? 'lg:w-[4.5rem]' : 'lg:w-64'} bg-slate-950 border-r border-slate-800 flex flex-col z-50 transition-[width,transform] duration-200 ease-out lg:static lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Brand Header */}
-        <div className="h-16 flex items-center justify-between px-5 border-b border-slate-800/80">
+        <div className={`h-16 flex items-center ${collapsed ? 'justify-center px-2' : 'justify-between px-5'} border-b border-slate-800`}>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-950">
+            <div className="w-9 h-9 rounded-lg bg-cyan-700 flex items-center justify-center">
               <Shield className="text-white" size={20} />
             </div>
-            <div>
+            {!collapsed && <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-sm font-extrabold text-white tracking-wider font-mono">SECUREPAY</span>
+                <span className="text-sm font-bold text-white tracking-wide">SecurePay</span>
                 <span className="text-[10px] font-bold px-1.5 py-0.2 bg-cyan-950 text-cyan-400 border border-cyan-800/60 rounded">SOC</span>
               </div>
-              <p className="text-[10px] font-mono text-slate-400 tracking-wider">FRAUD INTELLIGENCE</p>
-            </div>
+              <p className="text-[10px] text-slate-400">Fraud monitoring</p>
+            </div>}
           </div>
 
           <button
@@ -107,28 +112,30 @@ export const Sidebar = ({ isOpen, onClose }) => {
         </div>
 
         {/* Grouped Nav Items */}
-        <nav className="flex-1 py-4 px-3 overflow-y-auto space-y-5">
+        <nav className={`flex-1 py-4 ${collapsed ? 'px-2' : 'px-3'} overflow-y-auto space-y-5`}>
           {navGroups.map((group) => (
             <div key={group.group} className="space-y-1">
-              <p className="px-3 text-[10px] font-mono uppercase tracking-widest text-slate-400 font-semibold mb-1.5">
+              {!collapsed && <p className="px-3 text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-1.5">
                 {group.group}
-              </p>
+              </p>}
               {group.items.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
                   end={item.to === '/'}
+                  title={collapsed ? item.label : undefined}
+                  aria-label={item.label}
                   onClick={() => onClose && onClose()}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all ${
+                    `flex items-center ${collapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2 rounded-lg text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400 ${
                       isActive
-                        ? 'bg-cyan-950/60 text-cyan-400 border border-cyan-800/60 shadow-sm shadow-cyan-950'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                        ? 'bg-slate-800 text-cyan-300'
+                        : 'text-slate-400 hover:text-slate-100 hover:bg-slate-900'
                     }`
                   }
                 >
-                  <item.icon size={16} className="flex-shrink-0" />
-                  <span>{item.label}</span>
+                  <item.icon size={18} className="flex-shrink-0" />
+                  {!collapsed && <span>{item.label}</span>}
                 </NavLink>
               ))}
             </div>
@@ -136,26 +143,29 @@ export const Sidebar = ({ isOpen, onClose }) => {
         </nav>
 
         {/* User Profile & Session Controls */}
-        <div className="border-t border-slate-800/80 p-3 bg-slate-950/60">
+        <div className={`border-t border-slate-800 p-3 ${collapsed ? 'flex flex-col items-center' : ''}`}>
           <NavLink
             to="/settings"
             onClick={() => onClose && onClose()}
-            className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-900 transition-colors mb-1.5"
+            title={collapsed ? `${user?.name || 'User'} — ${user?.role || 'role'}` : undefined}
+            className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'} p-2 rounded-lg hover:bg-slate-900 transition-colors mb-1.5`}
           >
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-slate-800 to-slate-700 border border-slate-700 flex items-center justify-center text-cyan-400 text-xs font-bold font-mono flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-cyan-300 text-xs font-bold flex-shrink-0">
               {user?.name?.[0]?.toUpperCase() || 'U'}
             </div>
-            <div className="flex-1 min-w-0">
+            {!collapsed && <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold text-white truncate">{user?.name}</p>
               <p className="text-[11px] font-mono text-slate-400 capitalize">{user?.role} Role</p>
-            </div>
+            </div>}
           </NavLink>
 
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 rounded-xl transition-colors border border-transparent hover:border-rose-900/30"
+            title={collapsed ? 'Sign out' : undefined}
+            aria-label="Sign out"
+            className={`flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-slate-400 hover:text-rose-300 hover:bg-rose-950/30 rounded-lg transition-colors ${collapsed ? 'w-10' : 'w-full'}`}
           >
-            <LogOut size={13} /> Terminate Session
+            <LogOut size={15} /> {!collapsed && 'Sign out'}
           </button>
         </div>
       </aside>

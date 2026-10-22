@@ -1,8 +1,10 @@
 # SecurePay Platform Implementation & Engineering Progress
 
-**Document Version:** 1.3.0  
-**Last Updated:** 2026-10-14  
-**Status:** Completed, Remediated & Fully Verified  
+**Document Version:** 1.4.0
+**Last Updated:** 2026-10-21
+**Status:** Local demonstration platform; production readiness has not been established
+
+The completion statements and test totals below are the historical verification snapshot from 2026-10-14. They are not evidence that every feature or security property has been re-verified against the current source. See the current audit notes at the end of this document for checks run on 2026-10-21 and remaining deployment blockers.
 
 ---
 
@@ -70,3 +72,12 @@ SecurePay is an enterprise-grade digital payment fraud monitoring, detection, an
    - Rate limiting middleware currently uses Express memory stores (`express-rate-limit`). For multi-instance clustered deployments, configure a Redis-backed store.
 3. **MongoDB Single-Instance:**
    - Transactions currently run on standalone MongoDB. For distributed multi-document ACID transactions across shards, replica set deployment is required.
+
+## 5. Current Audit Notes (2026-10-21)
+
+- Backend Jest tests and ML service tests were run against the current checkout; see the task report for exact results.
+- CORS now uses the configured frontend origin and local development origins rather than accepting arbitrary browser origins.
+- The local development API is configured on port 5001; the server, frontend example configuration, and local run documentation use that port consistently.
+- CSV report values are quoted and spreadsheet formula prefixes in string fields are neutralized.
+- CSV ingestion now updates customer counters and reports row-level post-processing failures without counting a stored transaction as rejected.
+- These changes do not establish production readiness. External security testing, a production secrets and data strategy, replica-set transaction testing, complete integration coverage, and representative labeled fraud model evaluation remain required.

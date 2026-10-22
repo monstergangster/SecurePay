@@ -1,11 +1,21 @@
 import main
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from pydantic import ValidationError
 
 def test_root_and_health():
     res = main.health_check()
     assert res["status"] == "operational"
     assert res["ml_model_deployed"] is True
+
+def test_health_reports_missing_model_as_degraded():
+    model = main.ML_MODEL
+    try:
+        main.ML_MODEL = None
+        res = main.health_check()
+        assert res["status"] == "degraded"
+        assert res["ml_model_deployed"] is False
+    finally:
+        main.ML_MODEL = model
 
 def test_metrics_endpoint():
     res = main.get_evaluation_metrics()
@@ -98,6 +108,41 @@ def test_reject_unsupported_currency_and_invalid_amount():
             continue
         raise AssertionError(f"Invalid amount {amount} must be rejected")
 
+def test_timezone_offsets_use_utc_for_hour_features():
+    utc_tx = main.TransactionInput(
+        transaction_id="TXN-UTC",
+        customer_id="CUST-001",
+        amount=100,
+        timestamp=datetime(2026, 10, 13, 3, 30, tzinfo=timezone.utc),
+    )
+    offset_tx = main.TransactionInput(
+        transaction_id="TXN-OFFSET",
+        customer_id="CUST-001",
+        amount=100,
+        timestamp=datetime(2026, 10, 13, 5, 30, tzinfo=timezone(timedelta(hours=2))),
+    )
+    utc_features, _ = main.extract_features(utc_tx)
+    offset_features, _ = main.extract_features(offset_tx)
+    assert utc_features.is_unusual_hour is True
+    assert offset_features.is_unusual_hour is True
+
+def test_rejects_invalid_behavior_counts_and_channels():
+    for values in (
+        {"recent_transaction_count": -1},
+        {"failed_attempts": -1},
+        {"channel": "unsupported"},
+    ):
+        try:
+            main.TransactionInput(
+                transaction_id="TXN-INVALID-FEATURE",
+                customer_id="CUST-001",
+                amount=100,
+                **values,
+            )
+        except ValidationError:
+            continue
+        raise AssertionError(f"Invalid feature values must be rejected: {values.keys()}")
+
 def test_synthetic_disclaimer_present():
     report = main.get_evaluation_metrics()
     assert "synthetic_data_disclaimer" in report
@@ -111,6 +156,9 @@ if __name__ == "__main__":
         test_anomalous_transaction_inference,
         test_legitimate_high_value_transaction,
         test_reject_unsupported_currency_and_invalid_amount,
+        test_health_reports_missing_model_as_degraded,
+        test_timezone_offsets_use_utc_for_hour_features,
+        test_rejects_invalid_behavior_counts_and_channels,
         test_synthetic_disclaimer_present,
     ]
     passed = 0

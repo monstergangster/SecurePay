@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Users, RefreshCw, ShieldAlert, UserCheck, ArrowRight } from 'lucide-react';
+import { Search, Users, RefreshCw, ArrowRight } from 'lucide-react';
 import api from '../services/api';
 import { RiskBadge } from '../components/ui/RiskBadge';
 import { Select } from '../components/ui/Input';
 import { Pagination } from '../components/ui/Pagination';
 import { EmptyState, TableSkeleton } from '../components/ui/EmptyState';
+import { PageHeader } from '../components/ui/PageHeader';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { formatINR } from '../utils/currency';
@@ -14,12 +15,14 @@ export default function Customers() {
   const [customers, setCustomers] = useState([]);
   const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [riskLevel, setRiskLevel] = useState('');
 
   const fetchCustomers = useCallback(async () => {
     setLoading(true);
+    setError('');
     try {
       const p = { page, limit: 15 };
       if (search) p.search = search;
@@ -28,6 +31,9 @@ export default function Customers() {
       setCustomers(res.data.data || []);
       setMeta(res.data.meta);
     } catch {
+      setCustomers([]);
+      setMeta(null);
+      setError('Unable to load customer profiles. Check your connection and try again.');
       toast.error('Failed to load customer profiles');
     } finally {
       setLoading(false);
@@ -41,26 +47,21 @@ export default function Customers() {
   return (
     <div className="space-y-6">
       {/* 1. Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-white tracking-tight">Customer Risk Profiles</h1>
-            <span className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-cyan-950 text-cyan-400 border border-cyan-800">
-              BEHAVIOURAL ENTITIES
-            </span>
-          </div>
-          <p className="text-xs text-slate-400">
-            Automated entity baselines, historical transaction frequencies, and persistent customer risk scoring.
-          </p>
-        </div>
-
-        <button
-          onClick={fetchCustomers}
-          className="p-2 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white rounded-xl transition-colors self-start sm:self-auto"
-        >
-          <RefreshCw size={13} className={loading ? 'animate-spin text-cyan-400' : ''} />
-        </button>
-      </div>
+      <PageHeader
+        title="Customers"
+        description="Review customer activity, transaction patterns, and recorded risk assessments."
+        actions={(
+          <button
+            onClick={fetchCustomers}
+            type="button"
+            aria-label="Refresh customers"
+            className="p-2.5 bg-slate-900 border border-slate-700 text-slate-300 hover:text-white rounded-lg transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400"
+          >
+            <RefreshCw size={16} className={loading ? 'animate-spin text-cyan-400' : ''} />
+          </button>
+        )}
+      />
+      {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
 
       {/* 2. Filters */}
       <div className="flex gap-2">
@@ -114,6 +115,15 @@ export default function Customers() {
                 <tr>
                   <td colSpan={7}>
                     <TableSkeleton rows={7} cols={7} />
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={7} className="p-6 text-center">
+                    <p className="text-sm text-rose-300">{error}</p>
+                    <button type="button" onClick={fetchCustomers} className="mt-3 text-xs font-semibold text-cyan-300 hover:text-cyan-200">
+                      Retry
+                    </button>
                   </td>
                 </tr>
               ) : customers.length === 0 ? (

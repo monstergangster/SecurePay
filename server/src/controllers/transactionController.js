@@ -24,7 +24,7 @@ const updateCustomerStats = async (transaction) => {
         $set: {
           currency: 'INR',
           lastTransactionAt: transaction.timestamp,
-          riskScore: transaction.riskScore !== null ? transaction.riskScore : 0,
+          riskScore: transaction.riskScore,
           riskLevel: transaction.riskLevel || 'unassessed',
         },
         $min: { firstTransactionAt: transaction.timestamp },

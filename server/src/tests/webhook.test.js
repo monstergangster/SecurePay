@@ -88,12 +88,27 @@ describe('Secure Webhook Signature, Idempotency & Stale Recovery Tests', () => {
       const rawPayload = JSON.stringify({ eventId: 'EVT-TEST-101' });
       const timestamp = Math.floor(Date.now() / 1000);
       const headers = {
-        'x-securepay-signature': `t=${timestamp},v1=deadbeef1234567890abcdefdeadbeef`,
+        'x-securepay-signature': `t=${timestamp},v1=${'de'.repeat(32)}`,
       };
 
       const res = adapter.verifySignature(rawPayload, headers, validSecret);
       expect(res.valid).toBe(false);
       expect(res.reason).toMatch(/mismatch/i);
+    });
+
+    it('should reject malformed signature timestamp and digest encodings', () => {
+      const rawPayload = JSON.stringify({ eventId: 'EVT-BAD-ENCODING' });
+      const malformedTime = adapter.verifySignature(rawPayload, {
+        'x-securepay-signature': 't=123abc,v1=' + 'a'.repeat(64),
+      }, validSecret);
+      expect(malformedTime.valid).toBe(false);
+      expect(malformedTime.reason).toMatch(/encoding/i);
+
+      const malformedDigest = adapter.verifySignature(rawPayload, {
+        'x-securepay-signature': `t=${Math.floor(Date.now() / 1000)},v1=xyz`,
+      }, validSecret);
+      expect(malformedDigest.valid).toBe(false);
+      expect(malformedDigest.reason).toMatch(/encoding/i);
     });
 
     it('should reject expired timestamps outside replay attack tolerance window', () => {
@@ -121,7 +136,7 @@ describe('Secure Webhook Signature, Idempotency & Stale Recovery Tests', () => {
 
     it('should validate required event schema attributes', () => {
       expect(() => adapter.parseEvent(null)).toThrow(/malformed/i);
-      expect(() => adapter.parseEvent({ eventType: 'test' })).toThrow(/missing unique eventid/i);
+      expect(() => adapter.parseEvent({ eventType: 'test' })).toThrow(/eventid.*non-empty/i);
       expect(() => adapter.parseEvent({ eventId: '1', eventType: 'payment.completed', data: { transactionId: 'TX1', customerId: 'C1', amount: -10 } })).toThrow(/positive number/i);
       expect(adapter.parseEvent({
         eventId: 'EVT-INR-VALID',
@@ -138,6 +153,16 @@ describe('Secure Webhook Signature, Idempotency & Stale Recovery Tests', () => {
         eventType: 'payment.completed',
         data: { transactionId: 'TX-PRECISION-1', customerId: 'C1', amount: 1.001, currency: 'INR' },
       })).toThrow(/two decimal places/i);
+      expect(() => adapter.parseEvent({
+        eventId: 'EVT-INVALID-TIMESTAMP',
+        eventType: 'payment.completed',
+        data: { transactionId: 'TX-BAD-TIME', customerId: 'C1', amount: 100, timestamp: 'not-a-date' },
+      })).toThrow(/invalid transaction timestamp/i);
+      expect(() => adapter.parseEvent({
+        eventId: 'EVT-INVALID-CHANNEL',
+        eventType: 'payment.completed',
+        data: { transactionId: 'TX-BAD-CHANNEL', customerId: 'C1', amount: 100, channel: 'other<script>' },
+      })).toThrow(/unsupported transaction channel/i);
     });
   });
 

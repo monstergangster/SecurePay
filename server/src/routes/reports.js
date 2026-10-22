@@ -6,6 +6,7 @@ const Alert = require('../models/Alert');
 const Case = require('../models/Case');
 const { success, error } = require('../utils/response');
 const auditLogger = require('../utils/auditLogger');
+const { escapeCsvCell } = require('../utils/csv');
 
 router.use(authenticate);
 
@@ -42,8 +43,19 @@ router.get('/transactions/export', async (req, res) => {
     if (riskLevel) filter.riskLevel = riskLevel;
     const transactions = await Transaction.find(filter).sort({ timestamp: -1 }).limit(10000);
     const csvRows = [
-      ['Transaction ID', 'Customer ID', 'Amount', 'Currency', 'Channel', 'Status', 'Risk Level', 'Risk Score', 'Timestamp', 'Merchant'].join(','),
-      ...transactions.map(t => [t.transactionId, t.customerId, t.amount, t.currency, t.channel, t.status, t.riskLevel, t.riskScore, t.timestamp.toISOString(), t.merchantId || ''].join(','))
+      ['Transaction ID', 'Customer ID', 'Amount', 'Currency', 'Channel', 'Status', 'Risk Level', 'Risk Score', 'Timestamp', 'Merchant'].map(escapeCsvCell).join(','),
+      ...transactions.map(t => [
+        t.transactionId,
+        t.customerId,
+        t.amount,
+        t.currency,
+        t.channel,
+        t.status,
+        t.riskLevel,
+        t.riskScore,
+        t.timestamp.toISOString(),
+        t.merchantId || '',
+      ].map(escapeCsvCell).join(','))
     ];
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename=transactions_${Date.now()}.csv`);

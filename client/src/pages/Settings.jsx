@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Shield, Lock, User, KeyRound, CheckCircle2 } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import api from '../services/api';
 import { Card, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import toast from 'react-hot-toast';
+import { PageHeader } from '../components/ui/PageHeader';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -35,17 +36,10 @@ export default function Settings() {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <h1 className="text-2xl font-bold text-white tracking-tight">Security & Account Settings</h1>
-          <span className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-cyan-950 text-cyan-400 border border-cyan-800">
-            SESSION
-          </span>
-        </div>
-        <p className="text-xs text-slate-400">
-          Manage your analyst identity credentials and authentication session security.
-        </p>
-      </div>
+      <PageHeader
+        title="Account Settings"
+        description="Review your account details and update your password."
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <Card>

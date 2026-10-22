@@ -3,23 +3,17 @@ import { Link } from 'react-router-dom';
 import {
   Search,
   RefreshCw,
-  ShieldAlert,
-  AlertTriangle,
   ArrowRight,
-  Filter,
-  CheckCircle2,
-  ExternalLink,
   ShieldCheck,
-  Eye,
 } from 'lucide-react';
 import api from '../services/api';
 import { RiskBadge } from '../components/ui/RiskBadge';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Select } from '../components/ui/Input';
 import { Pagination } from '../components/ui/Pagination';
-import { EmptyState, TableSkeleton } from '../components/ui/EmptyState';
-import toast from 'react-hot-toast';
-import { formatDistanceToNow, format } from 'date-fns';
+import { EmptyState, Skeleton } from '../components/ui/EmptyState';
+import { PageHeader } from '../components/ui/PageHeader';
+import { formatDistanceToNow } from 'date-fns';
 import { formatINR } from '../utils/currency';
 
 export default function Alerts() {
@@ -29,15 +23,17 @@ export default function Alerts() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({ status: '', severity: '' });
-  const [counts, setCounts] = useState({ critical: 0, high: 0, medium: 0, open: 0 });
+  const [counts, setCounts] = useState(null);
+  const [error, setError] = useState('');
 
   const updateFilter = (key, val) => {
+    setLoading(true);
+    setError('');
     setFilters((prev) => ({ ...prev, [key]: val }));
     setPage(1);
   };
 
   const fetchAlerts = useCallback(async () => {
-    setLoading(true);
     try {
       const params = { page, limit: 15 };
       if (search) params.search = search;
@@ -45,22 +41,32 @@ export default function Alerts() {
       if (filters.severity) params.severity = filters.severity;
 
       const res = await api.get('/alerts', { params });
-      setAlerts(res.data.data || []);
-      setMeta(res.data.meta);
-
-      // Fetch summary counters from analytics for top threat strip
-      const dashRes = await api.get('/analytics/dashboard');
-      if (dashRes.data?.data?.summary) {
-        const s = dashRes.data.data.summary;
-        setCounts({
-          critical: s.criticalAlerts || 0,
-          high: s.openAlerts || 0,
-          medium: (s.openAlerts || 0) - (s.criticalAlerts || 0),
-          open: s.openAlerts || 0,
-        });
+      if (!Array.isArray(res.data?.data)) {
+        throw new Error('The alert service returned an unexpected response.');
       }
-    } catch {
-      toast.error('Failed to load threat center records');
+      setAlerts(res.data.data);
+      setMeta(res.data.meta || null);
+
+      try {
+        const dashRes = await api.get('/analytics/dashboard');
+        const summary = dashRes.data?.data?.overview;
+        setCounts(summary ? {
+          critical: summary.criticalAlerts,
+          high: summary.highAlerts,
+          open: summary.openAlerts,
+        } : null);
+      } catch {
+        setCounts(null);
+      }
+    } catch (requestError) {
+      setAlerts([]);
+      setMeta(null);
+      setCounts(null);
+      setError(
+        requestError?.response?.data?.message
+          || requestError?.message
+          || 'Unable to load threat alerts. Check your connection and try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -70,29 +76,29 @@ export default function Alerts() {
     fetchAlerts();
   }, [fetchAlerts]);
 
+  const refreshAlerts = () => {
+    setLoading(true);
+    setError('');
+    fetchAlerts();
+  };
+
   return (
     <div className="space-y-6">
       {/* 1. Threat Center Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-white tracking-tight">Threat Center</h1>
-            <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-red-950 text-red-400 border border-red-800">
-              ACTIVE VECTORS
-            </span>
-          </div>
-          <p className="text-xs text-slate-400">
-            Deduplicated security alerts prioritized by anomaly severity and financial exposure.
-          </p>
-        </div>
-
-        <button
-          onClick={fetchAlerts}
-          className="p-2 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white rounded-xl transition-colors self-start sm:self-auto"
-        >
-          <RefreshCw size={14} className={loading ? 'animate-spin text-cyan-400' : ''} />
-        </button>
-      </div>
+      <PageHeader
+        title="Threat Center"
+        description="Review alerts raised by payment monitoring, understand the evidence, and decide what to investigate."
+        actions={(
+          <button
+            onClick={refreshAlerts}
+            type="button"
+            aria-label="Refresh threat alerts"
+            className="p-2.5 bg-slate-900 border border-slate-700 text-slate-300 hover:text-white rounded-lg transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400"
+          >
+            <RefreshCw size={16} className={loading ? 'animate-spin text-cyan-400' : ''} />
+          </button>
+        )}
+      />
 
       {/* 2. Urgent Threat Metrics Strip (Section 21) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -101,7 +107,7 @@ export default function Alerts() {
             Critical Threats
           </p>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-bold font-mono text-red-300">{counts.critical}</span>
+            <span className="text-2xl font-bold font-mono text-red-300">{counts?.critical ?? '—'}</span>
             <span className="text-[10px] font-mono text-red-400 bg-red-950 px-1.5 py-0.5 rounded border border-red-800">
               Urgent
             </span>
@@ -114,7 +120,7 @@ export default function Alerts() {
           </p>
           <div className="flex items-baseline justify-between">
             <span className="text-2xl font-bold font-mono text-orange-300">
-              {Math.max(0, counts.open - counts.critical)}
+              {counts?.high ?? '—'}
             </span>
             <span className="text-[10px] font-mono text-orange-400 bg-orange-950 px-1.5 py-0.5 rounded border border-orange-800">
               Monitor
@@ -127,7 +133,7 @@ export default function Alerts() {
             Total Open Threats
           </p>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-bold font-mono text-sky-300">{counts.open}</span>
+            <span className="text-2xl font-bold font-mono text-sky-300">{counts?.open ?? '—'}</span>
             <span className="text-[10px] font-mono text-sky-400 bg-sky-950 px-1.5 py-0.5 rounded border border-sky-800">
               Queue
             </span>
@@ -139,13 +145,19 @@ export default function Alerts() {
             All Monitored Alerts
           </p>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-bold font-mono text-slate-200">{meta?.total || 0}</span>
+            <span className="text-2xl font-bold font-mono text-slate-200">{meta?.total ?? (error ? '—' : 0)}</span>
             <span className="text-[10px] font-mono text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">
               Historical
             </span>
           </div>
         </div>
       </div>
+
+      {!counts && !loading && !error && (
+        <p className="text-xs text-slate-500">
+          Threat summary analytics are unavailable; alert records remain available below.
+        </p>
+      )}
 
       {/* 3. Search & Filter Bar */}
       <div className="flex gap-2 flex-wrap">
@@ -156,6 +168,8 @@ export default function Alerts() {
             placeholder="Search alerts by title or transaction ID…"
             value={search}
             onChange={(e) => {
+              setLoading(true);
+              setError('');
               setSearch(e.target.value);
               setPage(1);
             }}
@@ -191,7 +205,19 @@ export default function Alerts() {
 
       {/* 4. Threat Cards List (Section 21 & 22) */}
       <div className="space-y-3">
-        {loading ? (
+        {error ? (
+          <div role="alert" className="p-8 rounded-2xl bg-slate-900 border border-rose-900/60 text-center">
+            <p className="text-sm font-semibold text-rose-300">Threat alerts could not be loaded</p>
+            <p className="mt-2 text-xs text-slate-400">{error}</p>
+            <button
+              type="button"
+              onClick={refreshAlerts}
+              className="mt-4 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-cyan-600 hover:bg-cyan-500 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        ) : loading ? (
           Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
               <Skeleton className="h-5 w-48" />
@@ -296,7 +322,16 @@ export default function Alerts() {
       </div>
 
       {/* Pagination */}
-      <Pagination meta={meta} onPageChange={setPage} />
+      {!error && (
+        <Pagination
+          meta={meta}
+          onPageChange={(nextPage) => {
+            setLoading(true);
+            setError('');
+            setPage(nextPage);
+          }}
+        />
+      )}
     </div>
   );
 }

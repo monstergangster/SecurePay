@@ -1,5 +1,7 @@
 const Case = require('../models/Case');
 const Alert = require('../models/Alert');
+const Transaction = require('../models/Transaction');
+const User = require('../models/User');
 const { success, error } = require('../utils/response');
 const { getPagination, paginationMeta } = require('../utils/pagination');
 const auditLogger = require('../utils/auditLogger');
@@ -32,6 +34,21 @@ exports.getCase = async (req, res) => {
 exports.createCase = async (req, res) => {
   try {
     const { title, description, priority, alertId, transactionIds, assignedTo } = req.body;
+    if (alertId) {
+      const alert = await Alert.findById(alertId).select('caseId');
+      if (!alert) return error(res, 'Alert not found', 404);
+      if (alert.caseId) return error(res, 'An investigation case is already linked to this alert', 409);
+    }
+    if (transactionIds?.length) {
+      const existingTransactions = await Transaction.countDocuments({ _id: { $in: transactionIds } });
+      if (existingTransactions !== new Set(transactionIds).size) {
+        return error(res, 'One or more transactions were not found', 400);
+      }
+    }
+    if (assignedTo) {
+      const assignee = await User.findOne({ _id: assignedTo, isActive: true }).select('_id');
+      if (!assignee) return error(res, 'Assigned user was not found or is inactive', 400);
+    }
     const caseId = `CASE-${uuidv4().substring(0, 8).toUpperCase()}`;
     const caseDoc = await Case.create({
       caseId, title, description,
@@ -42,7 +59,23 @@ exports.createCase = async (req, res) => {
       alerts: alertId ? [alertId] : [],
       timeline: [{ event: 'Case created', actor: req.user._id, timestamp: new Date(), details: { title } }],
     });
-    if (alertId) await Alert.findByIdAndUpdate(alertId, { caseId: caseDoc._id });
+    if (alertId) {
+      let linkedAlert;
+      try {
+        linkedAlert = await Alert.findOneAndUpdate(
+          { _id: alertId, $or: [{ caseId: { $exists: false } }, { caseId: null }] },
+          { $set: { caseId: caseDoc._id } },
+          { new: true }
+        );
+      } catch (linkError) {
+        await Case.deleteOne({ _id: caseDoc._id });
+        throw linkError;
+      }
+      if (!linkedAlert) {
+        await Case.deleteOne({ _id: caseDoc._id });
+        return error(res, 'An investigation case is already linked to this alert', 409);
+      }
+    }
     await auditLogger.log({ actor: req.user._id, actorRole: req.user.role, action: 'CASE_CREATED', entity: 'Case', entityId: caseDoc.caseId, details: { title, priority }, ipAddress: req.ip });
     return success(res, caseDoc, 'Case created', 201);
   } catch (err) { return error(res, 'Failed to create case', 500); }
@@ -120,6 +153,15 @@ exports.addNote = async (req, res) => {
     caseDoc.timeline.push({ event: 'Note added', actor: req.user._id, timestamp: new Date() });
     await caseDoc.save();
     await caseDoc.populate('notes.author', 'name email');
+    await auditLogger.log({
+      actor: req.user._id,
+      actorRole: req.user.role,
+      action: 'CASE_NOTE_ADDED',
+      entity: 'Case',
+      entityId: caseDoc.caseId,
+      details: { isInternal: Boolean(isInternal) },
+      ipAddress: req.ip,
+    });
     return success(res, caseDoc, 'Note added');
   } catch (err) { return error(res, 'Failed to add note', 500); }
 };
@@ -129,11 +171,22 @@ exports.linkTransaction = async (req, res) => {
     const { transactionId } = req.body;
     const caseDoc = await Case.findById(req.params.id);
     if (!caseDoc) return error(res, 'Case not found', 404);
-    const txIdStr = transactionId.toString();
+    const transaction = await Transaction.findById(transactionId).select('_id');
+    if (!transaction) return error(res, 'Transaction not found', 404);
+    const txIdStr = transaction._id.toString();
     if (!caseDoc.transactions.map(t => t.toString()).includes(txIdStr)) {
-      caseDoc.transactions.push(transactionId);
+      caseDoc.transactions.push(transaction._id);
       caseDoc.timeline.push({ event: 'Transaction linked', actor: req.user._id, timestamp: new Date() });
       await caseDoc.save();
+      await auditLogger.log({
+        actor: req.user._id,
+        actorRole: req.user.role,
+        action: 'CASE_TRANSACTION_LINKED',
+        entity: 'Case',
+        entityId: caseDoc.caseId,
+        details: { transactionId: transaction._id.toString() },
+        ipAddress: req.ip,
+      });
     }
     return success(res, caseDoc, 'Transaction linked to case');
   } catch (err) { return error(res, 'Failed to link transaction', 500); }

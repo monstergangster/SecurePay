@@ -34,7 +34,7 @@ exports.me = async (req, res) => success(res, req.user, 'User profile retrieved'
 
 exports.logout = async (req, res) => {
   await auditLogger.log({ actor: req.user._id, actorRole: req.user.role, action: 'LOGOUT', entity: 'User', entityId: req.user._id.toString(), ipAddress: req.ip });
-  return success(res, null, 'Logged out successfully');
+  return success(res, null, 'Logout recorded. This bearer token remains valid until it expires or the account is deactivated.');
 };
 
 exports.changePassword = async (req, res) => {

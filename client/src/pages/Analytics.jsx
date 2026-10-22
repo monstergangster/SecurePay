@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   BarChart,
   Bar,
@@ -9,16 +9,10 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
 } from 'recharts';
 import {
   Download,
   RefreshCw,
-  BarChart3,
-  BrainCircuit,
-  TrendingUp,
   CreditCard,
   ShieldAlert,
   ShieldCheck,
@@ -30,6 +24,7 @@ import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Input';
 import { InsightCard } from '../components/ui/InsightCard';
 import { Skeleton } from '../components/ui/EmptyState';
+import { PageHeader } from '../components/ui/PageHeader';
 import toast from 'react-hot-toast';
 import { formatINR } from '../utils/currency';
 
@@ -59,29 +54,45 @@ export default function Analytics() {
   const [riskData, setRiskData] = useState(null);
   const [caseStats, setCaseStats] = useState(null);
   const [dashSummary, setDashSummary] = useState(null);
+  const [loadErrors, setLoadErrors] = useState([]);
   const [exporting, setExporting] = useState(false);
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     setLoading(true);
-    try {
-      const [rRes, cRes, dRes] = await Promise.all([
-        api.get('/analytics/risk', { params: { days } }),
-        api.get('/analytics/cases'),
-        api.get('/analytics/dashboard'),
-      ]);
-      setRiskData(rRes.data.data);
-      setCaseStats(cRes.data.data);
-      setDashSummary(dRes.data.data?.summary || null);
-    } catch {
-      toast.error('Failed to load analytics data');
-    } finally {
-      setLoading(false);
+    const results = await Promise.allSettled([
+      api.get('/analytics/risk', { params: { days } }),
+      api.get('/analytics/cases'),
+      api.get('/analytics/dashboard'),
+    ]);
+    const [riskResult, casesResult, dashboardResult] = results;
+    const errors = [];
+
+    if (riskResult.status === 'fulfilled') {
+      setRiskData(riskResult.value.data?.data || null);
+    } else {
+      setRiskData(null);
+      errors.push(`Risk trends: ${riskResult.reason?.response?.data?.message || 'unavailable'}`);
     }
-  };
+    if (casesResult.status === 'fulfilled') {
+      setCaseStats(casesResult.value.data?.data || null);
+    } else {
+      setCaseStats(null);
+      errors.push(`Case outcomes: ${casesResult.reason?.response?.data?.message || 'unavailable'}`);
+    }
+    if (dashboardResult.status === 'fulfilled') {
+      setDashSummary(dashboardResult.value.data?.data?.summary || null);
+    } else {
+      setDashSummary(null);
+      errors.push(`Dashboard summary: ${dashboardResult.reason?.response?.data?.message || 'unavailable'}`);
+    }
+    setLoadErrors(errors);
+    if (errors.length) toast.error('Some analytics could not be loaded');
+    setLoading(false);
+  }, [days]);
 
   useEffect(() => {
     fetchAnalytics();
-  }, [days]);
+  }, [fetchAnalytics]);
 
   const handleExportCsv = async () => {
     setExporting(true);
@@ -132,29 +143,20 @@ export default function Analytics() {
   return (
     <div className="space-y-6">
       {/* 1. Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-white tracking-tight">Behaviour Analytics & Intelligence</h1>
-            <span className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-purple-950 text-purple-400 border border-purple-800">
-              EMPIRICAL TELEMETRY
-            </span>
-          </div>
-          <p className="text-xs text-slate-400">
-            Statistical deviation baselines, heuristic trigger distributions, and investigation outcomes.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2.5">
+      <PageHeader
+        title="Behaviour Analytics"
+        description="Explore real payment and investigation patterns for the selected period."
+        actions={(
+          <>
           <Select
             value={days}
             onChange={(e) => setDays(e.target.value)}
             className="w-32 text-xs"
           >
-            <option value="7">Last 7 Days</option>
-            <option value="14">Last 14 Days</option>
-            <option value="30">Last 30 Days</option>
-            <option value="90">Last 90 Days</option>
+            <option value="7">Last 7 days</option>
+            <option value="14">Last 14 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
           </Select>
 
           <Button
@@ -164,17 +166,29 @@ export default function Analytics() {
             loading={exporting}
             className="text-xs"
           >
-            <Download size={13} /> Export Report
+            <Download size={13} /> Export report
           </Button>
 
           <button
             onClick={fetchAnalytics}
+            type="button"
+            aria-label="Refresh analytics"
             className="p-2 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white rounded-xl transition-colors"
           >
             <RefreshCw size={13} className={loading ? 'animate-spin text-cyan-400' : ''} />
           </button>
+          </>
+        )}
+      />
+
+      {loadErrors.length > 0 && (
+        <div role="alert" className="rounded-xl border border-rose-900/60 bg-rose-950/30 px-4 py-3 text-sm text-rose-200">
+          <p>Some analytics are unavailable. Refresh to try again.</p>
+          <ul className="mt-1 list-disc pl-5 text-xs text-rose-300">
+            {loadErrors.map((error) => <li key={error}>{error}</li>)}
+          </ul>
         </div>
-      </div>
+      )}
 
       {/* 2. Insight Cards Strip (Section 26) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -184,14 +198,14 @@ export default function Analytics() {
           <>
             <InsightCard
               title="Highest Risk Channel"
-              highlight={highestRiskChannel}
+              highlight={riskData ? (highestRiskChannel === 'None' ? 'No channel data' : highestRiskChannel) : 'Unavailable'}
               subtitle={`${highestChannelAnom} flagged transactions observed`}
               icon={CreditCard}
               variant="amber"
             />
             <InsightCard
               title="Primary Anomaly Vector"
-              highlight={topAnomalyRule}
+              highlight={riskData ? (topRules.length ? topAnomalyRule : 'No rules triggered') : 'Unavailable'}
               subtitle={`${topRuleTriggers} rule activations recorded`}
               icon={ShieldAlert}
               variant="rose"

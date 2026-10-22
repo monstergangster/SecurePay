@@ -5,6 +5,7 @@ const { authenticate, authorize } = require('../middleware/auth');
 const { importLimiter } = require('../middleware/rateLimiter');
 const { parse } = require('csv-parse/sync');
 const Transaction = require('../models/Transaction');
+const Customer = require('../models/Customer');
 const Alert = require('../models/Alert');
 const RiskAssessment = require('../models/RiskAssessment');
 const { fullAssessment } = require('../utils/riskEngine');
@@ -26,7 +27,7 @@ router.post('/csv', authorize('admin', 'analyst'), importLimiter, upload.single(
   if (!req.file) return error(res, 'No file uploaded', 400);
   if (req.file.size > 10 * 1024 * 1024) return error(res, 'File size exceeds 10MB limit', 400);
   const batchId = uuidv4();
-  const summary = { accepted: 0, rejected: 0, duplicates: 0, invalid: 0, errors: [] };
+  const summary = { total: 0, accepted: 0, rejected: 0, duplicates: 0, invalid: 0, errors: [] };
   try {
     let records;
     try {
@@ -36,6 +37,7 @@ router.post('/csv', authorize('admin', 'analyst'), importLimiter, upload.single(
     }
     if (!records.length) return error(res, 'CSV file is empty', 400);
     if (records.length > MAX_ROWS) return error(res, `CSV exceeds ${MAX_ROWS} row limit`, 400);
+    summary.total = records.length;
 
     const headers = Object.keys(records[0]);
     const missingFields = REQUIRED_FIELDS.filter((f) => !headers.includes(f));
@@ -81,6 +83,7 @@ router.post('/csv', authorize('admin', 'analyst'), importLimiter, upload.single(
       }
 
       toInsert.push({
+        sourceRow: rowNum,
         transactionId: String(row.transactionId).trim(),
         externalRef: row.externalRef || undefined,
         customerId: String(row.customerId).trim(),
@@ -98,8 +101,11 @@ router.post('/csv', authorize('admin', 'analyst'), importLimiter, upload.single(
     }
 
     for (const txData of toInsert) {
+      const { sourceRow, ...transactionData } = txData;
+      let tx;
+      let assessmentSaved = false;
       try {
-        const tx = await Transaction.create(txData);
+        tx = await Transaction.create(transactionData);
         const assessment = await fullAssessment(tx);
 
         if (assessment.success) {
@@ -141,6 +147,27 @@ router.post('/csv', authorize('admin', 'analyst'), importLimiter, upload.single(
           featuresExtracted: assessment.mlFeatures || null,
           assessedAt: assessment.assessedAt,
         });
+        assessmentSaved = true;
+
+        const suspicious = ['flagged', 'blocked', 'held_for_review'].includes(tx.status);
+        await Customer.findOneAndUpdate(
+          { customerId: tx.customerId },
+          {
+            $inc: {
+              transactionCount: 1,
+              totalTransactionAmount: tx.amount,
+              flaggedTransactionCount: suspicious ? 1 : 0,
+            },
+            $set: {
+              currency: 'INR',
+              lastTransactionAt: tx.timestamp,
+              riskScore: tx.riskScore,
+              riskLevel: tx.riskLevel || 'unassessed',
+            },
+            $min: { firstTransactionAt: tx.timestamp },
+          },
+          { upsert: true }
+        );
 
         // Trigger deduplicated alert if high risk or failure
         if (!assessment.success || assessment.score >= 55) {
@@ -164,12 +191,34 @@ router.post('/csv', authorize('admin', 'analyst'), importLimiter, upload.single(
 
         summary.accepted++;
       } catch (e) {
-        if (e.code === 11000) {
+        if (e.code === 11000 && !tx) {
           summary.duplicates++;
           summary.rejected++;
+          summary.errors.push({ row: sourceRow, transactionId: txData.transactionId, errors: ['Duplicate transaction ID'] });
         } else {
-          summary.invalid++;
-          summary.rejected++;
+          logger.error('Import row processing failed', { transactionId: txData.transactionId, error: e.message });
+          if (tx) {
+            if (!assessmentSaved) {
+              tx.riskScore = null;
+              tx.riskLevel = 'unassessed';
+              tx.assessmentStatus = 'failed';
+              tx.assessmentError = 'Transaction assessment or persistence failed';
+              tx.status = 'held_for_review';
+              await tx.save().catch((saveErr) => {
+                logger.error('Unable to mark imported transaction for review', { transactionId: txData.transactionId, error: saveErr.message });
+              });
+            }
+            summary.accepted++;
+            summary.errors.push({
+              row: sourceRow,
+              transactionId: txData.transactionId,
+              errors: ['Transaction was stored, but a follow-up processing step failed. Review it before operational use.'],
+            });
+          } else {
+            summary.invalid++;
+            summary.rejected++;
+            summary.errors.push({ row: sourceRow, transactionId: txData.transactionId, errors: ['Transaction could not be stored.'] });
+          }
         }
       }
     }

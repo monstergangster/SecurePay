@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -29,32 +29,42 @@ export default function CaseDetail() {
   const { id } = useParams();
   const [caseDoc, setCaseDoc] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [showNote, setShowNote] = useState(false);
   const [showUpdate, setShowUpdate] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [updateForm, setUpdateForm] = useState({ status: '', outcome: '', resolutionNote: '' });
   const [saving, setSaving] = useState(false);
 
-  const fetchCase = async () => {
+  const fetchCase = useCallback(async () => {
+    setLoadError('');
     try {
       const res = await api.get(`/cases/${id}`);
       const c = res.data.data;
+      if (!c) throw new Error('Case record not found.');
       setCaseDoc(c);
       setUpdateForm({
         status: c.status,
         outcome: c.outcome || '',
         resolutionNote: c.resolutionNote || '',
       });
-    } catch {
+    } catch (error) {
+      setCaseDoc(null);
+      setLoadError(
+        error.response?.data?.message
+          || error.message
+          || 'Unable to load this case. Check your connection and try again.'
+      );
       toast.error('Failed to load case investigation');
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
+    setLoading(true);
     fetchCase();
-  }, [id]);
+  }, [fetchCase]);
 
   const addNote = async () => {
     if (!noteText.trim()) return;
@@ -105,7 +115,19 @@ export default function CaseDetail() {
   }
 
   if (!caseDoc) {
-    return <div className="p-8 text-center text-slate-400">Case record not found.</div>;
+    return (
+      <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center">
+        <p role="alert" className="text-sm text-slate-300">{loadError || 'Case record not found.'}</p>
+        <div className="mt-4 flex justify-center gap-3">
+          {loadError && (
+            <Button size="sm" onClick={() => { setLoading(true); fetchCase(); }}>Retry</Button>
+          )}
+          <Link to="/cases">
+            <Button variant="secondary" size="sm">Back to Cases</Button>
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (

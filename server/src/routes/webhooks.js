@@ -15,6 +15,7 @@ const auditLogger = require('../utils/auditLogger');
 const logger = require('../config/logger');
 const { v4: uuidv4 } = require('uuid');
 const { formatINR } = require('../utils/currency');
+const { isStrongSecret } = require('../config/security');
 
 const MIN_SECRET_LENGTH = 32;
 const STALE_PROCESSING_TIMEOUT_MS = parseInt(process.env.WEBHOOK_STALE_TIMEOUT_MS, 10) || 5 * 60 * 1000; // 5 minutes default
@@ -40,13 +41,12 @@ const getWebhookSecret = () => {
     return null;
   }
 
-  const trimmed = candidate.trim();
-  if (trimmed.length < MIN_SECRET_LENGTH) {
-    logger.error(`Webhook secret configuration error: signing secret fails minimum length requirement (${trimmed.length} < ${MIN_SECRET_LENGTH})`);
+  if (!isStrongSecret(candidate)) {
+    logger.error(`Webhook secret configuration error: signing secret must be unique, non-placeholder, and at least ${MIN_SECRET_LENGTH} characters`);
     return null;
   }
 
-  return trimmed;
+  return candidate.trim();
 };
 
 const updateCustomerStats = async (transaction) => {
@@ -63,7 +63,7 @@ const updateCustomerStats = async (transaction) => {
         $set: {
           currency: 'INR',
           lastTransactionAt: transaction.timestamp,
-          riskScore: transaction.riskScore !== null ? transaction.riskScore : 0,
+          riskScore: transaction.riskScore,
           riskLevel: transaction.riskLevel || 'unassessed',
         },
         $min: { firstTransactionAt: transaction.timestamp },
@@ -238,17 +238,26 @@ router.post('/receive', apiLimiter, async (req, res) => {
   }
 
   // 5. Check if transaction already exists (either from this event's prior attempt or duplicate)
-  let transaction = await Transaction.findOne({ transactionId: txData.transactionId });
-  
-  if (transaction && transaction.assessmentStatus === 'completed') {
-    // Transaction exists and was already assessed — just update WebhookEvent and return
-    await WebhookEvent.findOneAndUpdate({ eventId }, { status: 'processed', processedAt: new Date() });
-    return success(
-      res,
-      { eventId, transactionId: transaction.transactionId, status: 'duplicate_transaction' },
-      'Transaction already recorded and assessed',
-      200
-    );
+  let transaction;
+  try {
+    transaction = await Transaction.findOne({ transactionId: txData.transactionId });
+
+    if (transaction && transaction.assessmentStatus === 'completed') {
+      await WebhookEvent.findOneAndUpdate({ eventId }, { status: 'processed', processedAt: new Date() });
+      return success(
+        res,
+        { eventId, transactionId: transaction.transactionId, status: 'duplicate_transaction' },
+        'Transaction already recorded and assessed',
+        200
+      );
+    }
+  } catch (lookupErr) {
+    logger.error(`Webhook transaction lookup failed for event ${eventId}: ${lookupErr.message}`);
+    await WebhookEvent.findOneAndUpdate(
+      { eventId },
+      { status: 'failed', errorMessage: 'Transaction lookup failed' }
+    ).catch((statusErr) => logger.error(`Failed to update event status: ${statusErr.message}`));
+    return error(res, 'Failed to look up webhook transaction', 500);
   }
 
   // 6. Persist Transaction (if new) or resume assessment (if prior attempt was interrupted)

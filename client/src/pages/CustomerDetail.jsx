@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -27,13 +27,31 @@ export default function CustomerDetail() {
   const { customerId } = useParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+
+  const fetchCustomer = useCallback(async () => {
+    setLoadError('');
+    try {
+      const response = await api.get(`/customers/${customerId}`);
+      if (!response.data?.data?.customer) throw new Error('Customer profile not found.');
+      setData(response.data.data);
+    } catch (error) {
+      setData(null);
+      setLoadError(
+        error.response?.data?.message
+          || error.message
+          || 'Unable to load this customer profile. Check your connection and try again.'
+      );
+      toast.error('Failed to load customer profile');
+    } finally {
+      setLoading(false);
+    }
+  }, [customerId]);
 
   useEffect(() => {
-    api.get(`/customers/${customerId}`)
-      .then((r) => setData(r.data.data))
-      .catch(() => toast.error('Failed to load customer profile'))
-      .finally(() => setLoading(false));
-  }, [customerId]);
+    setLoading(true);
+    fetchCustomer();
+  }, [fetchCustomer]);
 
   if (loading) {
     return (
@@ -49,11 +67,33 @@ export default function CustomerDetail() {
   }
 
   if (!data || !data.customer) {
-    return <div className="p-8 text-center text-slate-400">Customer entity not found.</div>;
+    return (
+      <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center">
+        <p role="alert" className="text-sm text-slate-300">{loadError || 'Customer profile not found.'}</p>
+        <div className="mt-4 flex justify-center gap-3">
+          {loadError && (
+            <button
+              type="button"
+              onClick={() => { setLoading(true); fetchCustomer(); }}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-cyan-950 text-cyan-300 border border-cyan-800 hover:bg-cyan-900"
+            >
+              Retry
+            </button>
+          )}
+          <Link
+            to="/customers"
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700"
+          >
+            Back to Customers
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   const { customer: c, recentTransactions = [], alerts = [], behavioralStats = {} } = data;
-  const isHighRisk = c.riskScore >= 55 || ['high', 'critical'].includes(c.riskLevel);
+  const hasRiskAssessment = Number.isFinite(c.riskScore);
+  const isHighRisk = hasRiskAssessment && c.riskScore >= 55;
 
   // Extract known channels and devices from transactions
   const uniqueChannels = Array.from(new Set(recentTransactions.map((t) => t.channel).filter(Boolean)));
@@ -108,12 +148,18 @@ export default function CustomerDetail() {
               <span className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold ${
                 isHighRisk ? 'text-amber-400 bg-amber-950 border border-amber-800' : 'text-emerald-400 bg-emerald-950 border border-emerald-800'
               }`}>
-                {isHighRisk ? 'ANOMALOUS BEHAVIOUR SUSPECTED' : 'NORMAL BEHAVIOURAL PROFILE'}
+                {!hasRiskAssessment
+                  ? 'RISK ASSESSMENT UNAVAILABLE'
+                  : isHighRisk
+                  ? 'ANOMALOUS BEHAVIOUR SUSPECTED'
+                  : 'NORMAL BEHAVIOURAL PROFILE'}
               </span>
             </div>
 
             <p className="text-sm text-slate-300 leading-relaxed max-w-2xl">
-              {isHighRisk
+              {!hasRiskAssessment
+                ? 'The customer has not received a risk assessment yet. This does not indicate a low-risk or normal behavioural profile.'
+                : isHighRisk
                 ? 'This customer exhibits significant deviations from normal transacting patterns, including elevated transaction amounts, frequency friction, or suspicious channel activity.'
                 : 'Customer transactions are currently aligned with established statistical baselines and known hardware configurations.'}
             </p>

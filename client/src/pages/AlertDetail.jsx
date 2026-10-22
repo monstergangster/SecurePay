@@ -1,15 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   MessageSquare,
   ExternalLink,
-  ShieldAlert,
   FolderOpen,
-  CheckCircle2,
-  Clock,
-  User,
-  AlertTriangle,
 } from 'lucide-react';
 import api from '../services/api';
 import { RiskBadge } from '../components/ui/RiskBadge';
@@ -28,6 +23,7 @@ export default function AlertDetail() {
   const navigate = useNavigate();
   const [alert, setAlert] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [updating, setUpdating] = useState(false);
   const [newStatus, setNewStatus] = useState('');
   const [comment, setComment] = useState('');
@@ -35,22 +31,37 @@ export default function AlertDetail() {
   const [showCase, setShowCase] = useState(false);
   const [caseForm, setCaseForm] = useState({ title: '', description: '', priority: 'high' });
   const [creatingCase, setCreatingCase] = useState(false);
+  const validId = /^[a-f\d]{24}$/i.test(id || '');
 
-  const fetchAlert = async () => {
+  const fetchAlert = useCallback(async () => {
     try {
       const res = await api.get(`/alerts/${id}`);
+      if (!res.data?.data) {
+        throw new Error('The alert service returned an unexpected response.');
+      }
       setAlert(res.data.data);
       setNewStatus(res.data.data.status);
-    } catch {
-      toast.error('Failed to load threat details');
+    } catch (requestError) {
+      setAlert(null);
+      setError(
+        requestError?.response?.data?.message
+          || requestError?.message
+          || 'Unable to load this alert. Check your connection and try again.'
+      );
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
+    if (validId) fetchAlert();
+  }, [fetchAlert, validId]);
+
+  const retryFetchAlert = () => {
+    setLoading(true);
+    setError('');
     fetchAlert();
-  }, [id]);
+  };
 
   const updateStatus = async () => {
     setUpdating(true);
@@ -101,6 +112,17 @@ export default function AlertDetail() {
     }
   };
 
+  if (!validId) {
+    return (
+      <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center">
+        <p role="alert" className="text-sm text-slate-300">Threat alert not found.</p>
+        <Link to="/alerts" className="mt-4 inline-block text-xs font-semibold text-cyan-400 hover:text-cyan-300">
+          Back to Threat Center
+        </Link>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="space-y-5">
@@ -110,7 +132,27 @@ export default function AlertDetail() {
     );
   }
 
-  if (!alert) return <div className="p-8 text-center text-slate-400">Threat alert not found.</div>;
+  if (!alert) {
+    const notFound = error.toLowerCase().includes('not found') || error.includes('invalid identifier');
+    return (
+      <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center">
+        <p role="alert" className="text-sm text-slate-300">
+          {notFound ? 'Threat alert not found.' : 'Threat alert could not be loaded.'}
+        </p>
+        {!notFound && <p className="mt-2 text-xs text-slate-400">{error}</p>}
+        <div className="flex justify-center gap-3 mt-4">
+          {!notFound && (
+            <Button size="sm" onClick={retryFetchAlert}>
+              Retry
+            </Button>
+          )}
+          <Link to="/alerts">
+            <Button variant="secondary" size="sm">Back to Threat Center</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const tx = alert.transactionId || {};
   const isCritical = alert.severity === 'critical';
@@ -317,7 +359,7 @@ export default function AlertDetail() {
                         description: `Initiated from ${alert.alertId}. Exposure: ${tx.amount !== undefined ? formatINR(tx.amount, tx.currency || '') : '—'}`,
                         priority: isCritical ? 'critical' : 'high',
                       });
-                      setShowCaseModal(true);
+                      setShowCase(true);
                     }}
                   >
                     <FolderOpen size={13} /> Open Investigation Case

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -38,25 +38,35 @@ export default function TransactionDetail() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [updating, setUpdating] = useState(false);
   const [showCaseModal, setShowCaseModal] = useState(false);
   const [caseForm, setCaseForm] = useState({ title: '', description: '', priority: 'high' });
   const [creatingCase, setCreatingCase] = useState(false);
 
-  const fetchTransaction = async () => {
+  const fetchTransaction = useCallback(async () => {
+    setLoadError('');
     try {
       const res = await api.get(`/transactions/${id}`);
+      if (!res.data?.data?.transaction) throw new Error('Transaction record not found.');
       setData(res.data.data);
-    } catch {
+    } catch (error) {
+      setData(null);
+      setLoadError(
+        error.response?.data?.message
+          || error.message
+          || 'Unable to load this transaction. Check your connection and try again.'
+      );
       toast.error('Failed to load transaction intelligence');
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
+    setLoading(true);
     fetchTransaction();
-  }, [id]);
+  }, [fetchTransaction]);
 
   const handleUpdateStatus = async (newStatus) => {
     setUpdating(true);
@@ -116,19 +126,32 @@ export default function TransactionDetail() {
 
   if (!data || !data.transaction) {
     return (
-      <div className="p-8 text-center text-slate-400">
-        Transaction record not found.
+      <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center">
+        <p role="alert" className="text-sm text-slate-300">{loadError || 'Transaction record not found.'}</p>
+        <div className="mt-4 flex justify-center gap-3">
+          {loadError && (
+            <Button size="sm" onClick={() => { setLoading(true); fetchTransaction(); }}>
+              Retry
+            </Button>
+          )}
+          <Link to="/transactions">
+            <Button variant="secondary" size="sm">Back to Transactions</Button>
+          </Link>
+        </div>
       </div>
     );
   }
 
   const { transaction: tx, alerts = [], assessments = [], behavioralProfile } = data;
-  const isHighRisk = (tx.riskScore || 0) >= 55;
-  const isCritical = (tx.riskScore || 0) >= 80;
+  const hasRiskAssessment = Number.isFinite(tx.riskScore);
+  const isHighRisk = hasRiskAssessment && tx.riskScore >= 55;
+  const isCritical = hasRiskAssessment && tx.riskScore >= 80;
 
   // Generate explainable risk recommendation based on actual data
-  let recommendation = 'Low risk profile. Transaction nominal for processing.';
-  let recommendedAction = 'Approve & Clear';
+  let recommendation = hasRiskAssessment
+    ? 'Low risk profile. Transaction nominal for processing.'
+    : 'A risk assessment is not available for this transaction.';
+  let recommendedAction = hasRiskAssessment ? 'Approve & Clear' : 'Review assessment results';
   if (isCritical) {
     recommendation =
       'Multiple critical anomaly thresholds exceeded. Significant deviation from baseline behavior indicates high likelihood of unauthorized or compromised payment instrument.';
@@ -137,7 +160,7 @@ export default function TransactionDetail() {
     recommendation =
       'Elevated risk score driven by heuristic signals or unusual behavioral attributes. Requires analyst verification before transaction completion.';
     recommendedAction = 'Escalate to Fraud Investigation Case';
-  } else if (tx.riskScore >= 25) {
+  } else if (hasRiskAssessment && tx.riskScore >= 25) {
     recommendation =
       'Moderate risk flags detected. Transaction exceeds minor monitoring thresholds.';
     recommendedAction = 'Monitor Customer Activity';

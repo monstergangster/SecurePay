@@ -127,6 +127,27 @@ describe('Phase 1: Risk Engine Failure Handling & Resilience Tests', () => {
   });
 
   describe('Database Errors & Failure Handling (No Silent Low-Risk Substitution)', () => {
+    it('should hold assessment when customer history cannot be read', async () => {
+      jest.spyOn(Rule, 'find').mockResolvedValue([]);
+      jest.spyOn(Transaction, 'find').mockReturnValue({
+        sort: jest.fn().mockReturnThis(),
+        select: jest.fn().mockRejectedValue(new Error('History database unavailable')),
+      });
+
+      const result = await fullAssessment({
+        transactionId: 'TXN-HISTORY-FAIL',
+        customerId: 'CUST-HISTORY-FAIL',
+        amount: 500,
+        currency: 'INR',
+        timestamp: new Date(),
+      }, { retries: 0, enableMl: false, retryDelayMs: 1 });
+
+      expect(result.success).toBe(false);
+      expect(result.score).toBeNull();
+      expect(result.level).toBe('unassessed');
+      expect(result.error).toBeDefined();
+    });
+
     it('should NOT return score: 0 or level: "low" when database query throws fatal error', async () => {
       jest.spyOn(Rule, 'find').mockImplementation(() => {
         throw new Error('Fatal MongoDB connection disconnect');

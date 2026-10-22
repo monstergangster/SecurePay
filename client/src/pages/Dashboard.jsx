@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -17,28 +15,22 @@ import {
   ShieldAlert,
   FolderOpen,
   RefreshCw,
-  Activity,
   ShieldCheck,
-  ShieldX,
-  TrendingUp,
   IndianRupee,
   Radio,
   ExternalLink,
   Ban,
-  Clock,
   Eye,
 } from 'lucide-react';
 import api from '../services/api';
-import { Badge } from '../components/ui/Badge';
 import { RiskBadge } from '../components/ui/RiskBadge';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Card, CardHeader, CardTitle } from '../components/ui/Card';
 import { MetricCard } from '../components/ui/MetricCard';
-import { ThreatLevel } from '../components/ui/ThreatLevel';
 import { ThreatCard } from '../components/ui/ThreatCard';
 import { Skeleton, EmptyState } from '../components/ui/EmptyState';
 import toast from 'react-hot-toast';
-import { formatDistanceToNow, format } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { formatINR } from '../utils/currency';
 
 const CustomChartTooltip = ({ active, payload, label }) => {
@@ -67,11 +59,15 @@ export default function Dashboard() {
   const [liveStream, setLiveStream] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState(null);
   const [blockingId, setBlockingId] = useState(null);
+  const [dashboardError, setDashboardError] = useState('');
+  const [transactionError, setTransactionError] = useState('');
+  const [healthUnavailable, setHealthUnavailable] = useState(false);
 
   const fetchData = useCallback(async (isSilent = false) => {
     if (!isSilent) setRefreshing(true);
+    setDashboardError('');
+    setTransactionError('');
     try {
       const [statsRes, healthRes, txRes] = await Promise.allSettled([
         api.get('/analytics/dashboard'),
@@ -81,14 +77,34 @@ export default function Dashboard() {
 
       if (statsRes.status === 'fulfilled' && statsRes.value.data.success) {
         setStats(statsRes.value.data.data);
+      } else {
+        setStats(null);
+        setDashboardError(
+          statsRes.status === 'rejected'
+            ? statsRes.reason?.response?.data?.message || 'Dashboard metrics could not be loaded.'
+            : 'Dashboard metrics response was unavailable.'
+        );
       }
       if (healthRes.status === 'fulfilled' && healthRes.value.data.success) {
         setHealth(healthRes.value.data.data);
+        setHealthUnavailable(false);
+      } else if (healthRes.status === 'rejected') {
+        setHealth(healthRes.reason?.response?.data?.data || null);
+        setHealthUnavailable(!healthRes.reason?.response?.data?.data);
+      } else {
+        setHealth(null);
+        setHealthUnavailable(true);
       }
       if (txRes.status === 'fulfilled' && txRes.value.data.success) {
         setLiveStream(txRes.value.data.data || []);
+      } else {
+        setLiveStream([]);
+        setTransactionError(
+          txRes.status === 'rejected'
+            ? txRes.reason?.response?.data?.message || 'Recent transactions could not be loaded.'
+            : 'Recent transactions response was unavailable.'
+        );
       }
-      setLastUpdated(new Date());
     } catch {
       toast.error('Failed to sync command center feeds');
     } finally {
@@ -124,9 +140,13 @@ export default function Dashboard() {
   };
 
   const summary = stats?.summary || {};
-  const totalTx = summary.totalTx || 1;
-  const flaggedCount = (summary.flaggedTx || 0) + (summary.heldReviewTx || 0);
-  const flaggedRatio = ((flaggedCount / totalTx) * 100).toFixed(1);
+  const totalTx = summary.totalTx;
+  const flaggedCount = summary.flaggedTx === undefined || summary.heldReviewTx === undefined
+    ? undefined
+    : summary.flaggedTx + summary.heldReviewTx;
+  const flaggedRatio = totalTx > 0 && flaggedCount !== undefined
+    ? `${((flaggedCount / totalTx) * 100).toFixed(1)}%`
+    : null;
   const volumeData = stats?.volumeData || [];
   const riskDist = stats?.riskDistribution || [];
   const activeThreats = stats?.activeThreats || [];
@@ -134,7 +154,9 @@ export default function Dashboard() {
   // Compute total flagged in 14 days for trend statement
   const totalPeriodFlagged = volumeData.reduce((acc, d) => acc + (d.flagged || 0), 0);
   const totalPeriodCount = volumeData.reduce((acc, d) => acc + (d.count || 0), 0);
-  const periodAnomalyRatio = totalPeriodCount > 0 ? ((totalPeriodFlagged / totalPeriodCount) * 100).toFixed(1) : '0';
+  const periodAnomalyRatio = totalPeriodCount > 0
+    ? `${((totalPeriodFlagged / totalPeriodCount) * 100).toFixed(1)}%`
+    : null;
 
   return (
     <div className="space-y-6">
@@ -142,34 +164,15 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-white tracking-tight">
-              Fraud Intelligence Command Center
-            </h1>
-            <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-cyan-950 text-cyan-400 border border-cyan-800">
-              SOC LIVE
-            </span>
+            <h1 className="text-2xl font-semibold text-white tracking-tight">Command Center</h1>
           </div>
           <p className="text-xs text-slate-400">
-            Real-time monitoring of payment activity, heuristic anomaly indicators, and active threat vectors.
+            A clear view of service health, suspicious payments, and investigations that need attention.
           </p>
         </div>
 
         {/* Operational Status Pill & Controls */}
         <div className="flex items-center gap-3">
-          {health && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs font-mono">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-slate-300 font-semibold">SYSTEM OPERATIONAL</span>
-              <span className="text-slate-600 hidden md:inline">|</span>
-              <span className="text-slate-400 text-[11px] hidden md:inline">
-                API: <span className="text-emerald-400">200 OK</span> · DB: <span className="text-emerald-400">ONLINE</span> · ML:{' '}
-                <span className={health.services?.mlService === 'connected' ? 'text-emerald-400' : 'text-amber-400'}>
-                  {health.services?.mlService === 'connected' ? 'ACTIVE' : 'STANDBY'}
-                </span>
-              </span>
-            </div>
-          )}
-
           <button
             onClick={() => fetchData(false)}
             disabled={refreshing}
@@ -182,70 +185,63 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 2. Threat Level Component (Section 10) */}
-      {loading ? (
-        <Skeleton className="h-28 rounded-2xl" />
-      ) : (
-        <ThreatLevel
-          level={summary.systemThreatLevel || 'MEDIUM'}
-          score={summary.avgRiskScore || 0}
-          flaggedTxCount={flaggedCount}
-          criticalAlertsCount={summary.criticalAlerts || 0}
-          lastUpdated={lastUpdated}
-        />
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-xs" aria-label="System service health">
+        {[
+          ['API', healthUnavailable ? 'Unavailable' : health?.services?.api === 'operational' ? 'Healthy' : 'Unknown'],
+          ['Database', health?.services?.database === 'connected' ? 'Healthy' : health?.services?.database === 'disconnected' ? 'Unavailable' : 'Unknown'],
+          ['ML service', health?.services?.mlService === 'connected' ? 'Healthy' : health?.services?.mlService === 'degraded' ? 'Degraded' : health?.services?.mlService === 'unavailable' ? 'Unavailable' : 'Unknown'],
+        ].map(([label, state]) => (
+          <span key={label}>
+            <span className="text-slate-400">{label}: </span>
+            <span className={
+              state === 'Healthy' ? 'text-emerald-300' :
+              state === 'Degraded' ? 'text-amber-300' :
+              state === 'Unavailable' ? 'text-rose-300' : 'text-slate-400'
+            }>{state}</span>
+          </span>
+        ))}
+        {health?.timestamp && <span className="text-slate-500">Checked {formatDistanceToNow(new Date(health.timestamp), { addSuffix: true })}</span>}
+      </div>
+
+      {dashboardError && (
+        <div role="alert" className="rounded-xl border border-rose-900/60 bg-rose-950/30 px-4 py-3 text-sm text-rose-200">
+          {dashboardError} Use Refresh to try again.
+        </div>
       )}
 
-      {/* 3. Key Metric Cards (Section 9) */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 lg:gap-4">
+      {/* Primary metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
         {loading ? (
-          Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
+          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
         ) : (
           <>
             <MetricCard
               title="Total Transactions"
-              value={summary.totalTx?.toLocaleString()}
-              subtext="Monitored in system"
+              value={summary.totalTx?.toLocaleString() ?? '—'}
+              subtext="Payments monitored"
               icon={ArrowLeftRight}
               variant="default"
             />
             <MetricCard
-              title="Flagged / Suspicious"
-              value={flaggedCount.toLocaleString()}
-              subtext={`${flaggedRatio}% anomaly rate`}
+              title="Suspicious Transactions"
+              value={flaggedCount?.toLocaleString() ?? '—'}
+              subtext={flaggedRatio ? `${flaggedRatio} of all transactions` : 'Assessment data unavailable'}
               icon={AlertTriangle}
               variant="warning"
-              trend={`${flaggedRatio}%`}
-              trendDirection={Number(flaggedRatio) > 5 ? 'up' : 'neutral'}
             />
             <MetricCard
               title="Money at Risk"
-              value={formatINR(summary.moneyAtRisk)}
-              subtext="Flagged payment exposure"
+              value={summary.moneyAtRisk === undefined ? '—' : formatINR(summary.moneyAtRisk, summary.currency || 'INR')}
+              subtext={summary.currencyMigrationRequired ? 'Mixed currencies require review' : 'Exposure from flagged payments'}
               icon={IndianRupee}
               variant="danger"
             />
             <MetricCard
-              title="Prevented Loss"
-              value={formatINR(summary.moneyProtected)}
-              subtext="Blocked fraudulent value"
-              icon={IndianRupee}
-              variant="success"
-            />
-            <MetricCard
-              title="Critical Threats"
-              value={summary.criticalAlerts || 0}
-              subtext="Urgent action required"
-              icon={ShieldAlert}
-              variant="danger"
-              trend={summary.criticalAlerts > 0 ? 'Urgent' : 'Normal'}
-              trendDirection={summary.criticalAlerts > 0 ? 'up' : 'down'}
-            />
-            <MetricCard
-              title="Open Cases"
-              value={summary.openCases || 0}
-              subtext={`${summary.resolvedCases || 0} resolved`}
+              title="Open Investigations"
+              value={summary.openCases?.toLocaleString() ?? '—'}
+              subtext="Cases still in progress"
               icon={FolderOpen}
-              variant="purple"
+              variant="intelligence"
             />
           </>
         )}
@@ -260,7 +256,7 @@ export default function Dashboard() {
               ACTIVE THREATS & HIGH-PRIORITY ALERTS
             </h2>
             <span className="text-xs font-mono text-red-400 bg-red-950/60 px-2 py-0.5 rounded border border-red-800">
-              {activeThreats.length} Requiring Attention
+              {dashboardError ? '—' : activeThreats.length} Requiring Attention
             </span>
           </div>
           <Link
@@ -277,6 +273,10 @@ export default function Dashboard() {
               <Skeleton key={i} className="h-44 rounded-xl" />
             ))}
           </div>
+        ) : dashboardError ? (
+          <p role="alert" className="rounded-xl border border-rose-900/60 bg-rose-950/30 px-4 py-6 text-center text-sm text-rose-200">
+            Priority alerts could not be loaded. Use Refresh to try again.
+          </p>
         ) : activeThreats.length === 0 ? (
           <Card className="p-8">
             <EmptyState
@@ -382,7 +382,7 @@ export default function Dashboard() {
                   <strong className="text-amber-400">{totalPeriodFlagged}</strong> flagged
                 </span>
                 <span className="font-mono text-cyan-400">
-                  Anomaly Rate: <strong>{periodAnomalyRatio}%</strong>
+                  Anomaly Rate: <strong>                  {periodAnomalyRatio ?? '—'}</strong>
                 </span>
               </div>
             </>
@@ -431,8 +431,8 @@ export default function Dashboard() {
                 );
               })}
 
-              <div className="pt-3 border-t border-slate-800 text-[11px] text-slate-500 font-mono text-center">
-                Total assessed: {totalTx} transactions
+              <div className="pt-3 border-t border-slate-800 text-[11px] text-slate-500 text-center">
+                Transactions by risk category. Total: {totalTx?.toLocaleString() ?? '—'}
               </div>
             </div>
           )}
@@ -457,6 +457,8 @@ export default function Dashboard() {
             <div className="p-4">
               <Skeleton className="h-44" />
             </div>
+          ) : transactionError ? (
+            <p role="alert" className="px-4 py-8 text-sm text-rose-300">{transactionError}</p>
           ) : liveStream.length === 0 ? (
             <p className="text-xs text-slate-500 text-center py-10">No live transactions available.</p>
           ) : (
@@ -506,6 +508,8 @@ export default function Dashboard() {
             <div className="p-4">
               <Skeleton className="h-44" />
             </div>
+          ) : dashboardError ? (
+            <p role="alert" className="px-4 py-8 text-sm text-rose-300">{dashboardError}</p>
           ) : !stats?.recentHighRiskTx?.length ? (
             <p className="text-xs text-slate-500 text-center py-10">No recent high-risk transactions detected.</p>
           ) : (

@@ -15,7 +15,7 @@ securepay/
 ```
 
 - **Frontend:** Runs on `http://localhost:5173`
-- **Backend API:** Runs on `http://localhost:5000` (API base: `/api/v1`)
+- **Backend API:** Runs on `http://localhost:5001` (API base: `/api/v1`)
 - **ML & Feature Service:** Runs on `http://localhost:8001`
 - **Database:** MongoDB at `mongodb://127.0.0.1:27017/securepay`
 
@@ -70,18 +70,25 @@ Open a PowerShell terminal:
 ```powershell
 cd D:\Final\securepay\server
 
-# Copy environment variables (or verify .env exists)
-Copy-Item .env.example .env
+# Create a local environment file only if one does not already exist
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+
+# Set JWT_SECRET and WEBHOOK_SECRET in .env to unique random values of at least 32 characters.
+# Generate each value without displaying it in shared logs:
+$jwtSecret = node -e "process.stdout.write(require('crypto').randomBytes(32).toString('hex'))"
+$webhookSecret = node -e "process.stdout.write(require('crypto').randomBytes(32).toString('hex'))"
+$devWebhookSecret = node -e "process.stdout.write(require('crypto').randomBytes(32).toString('hex'))"
+(Get-Content .env) -replace '^JWT_SECRET=.*', "JWT_SECRET=$jwtSecret" -replace '^WEBHOOK_SECRET=.*', "WEBHOOK_SECRET=$webhookSecret" -replace '^DEV_WEBHOOK_SECRET=.*', "DEV_WEBHOOK_SECRET=$devWebhookSecret" | Set-Content .env
 
 # Install backend dependencies
-npm install
+npm ci
 
 # Seed demo rules, users, transactions, and cases
 node src/scripts/seed.js
 
 # Start backend in development mode
 npm run dev
-# Server will be listening on http://localhost:5000
+# Server will be listening on http://localhost:5001
 ```
 
 ---
@@ -92,7 +99,7 @@ Open a second PowerShell terminal:
 cd D:\Final\securepay\client
 
 # Install frontend dependencies (with legacy peer resolution for React 19)
-npm install --legacy-peer-deps
+npm ci --legacy-peer-deps
 
 # Start Vite dev server
 npm run dev

@@ -5,11 +5,7 @@ import {
   Plus,
   FolderOpen,
   RefreshCw,
-  Clock,
-  CheckCircle2,
-  AlertTriangle,
   ArrowRight,
-  ShieldAlert,
 } from 'lucide-react';
 import api from '../services/api';
 import { RiskBadge } from '../components/ui/RiskBadge';
@@ -18,6 +14,7 @@ import { Button } from '../components/ui/Button';
 import { Select, Input, Textarea } from '../components/ui/Input';
 import { Pagination } from '../components/ui/Pagination';
 import { EmptyState, TableSkeleton } from '../components/ui/EmptyState';
+import { PageHeader } from '../components/ui/PageHeader';
 import { Modal } from '../components/ui/Modal';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -88,6 +85,7 @@ export default function Cases() {
   const [cases, setCases] = useState([]);
   const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({ status: '', priority: '' });
@@ -100,6 +98,7 @@ export default function Cases() {
 
   const fetchCases = useCallback(async () => {
     setLoading(true);
+    setError('');
     try {
       const p = { page, limit: 15 };
       if (search) p.search = search;
@@ -109,6 +108,9 @@ export default function Cases() {
       setCases(res.data.data || []);
       setMeta(res.data.meta);
     } catch {
+      setCases([]);
+      setMeta(null);
+      setError('Unable to load investigation cases. Check your connection and try again.');
       toast.error('Failed to load investigation cases');
     } finally {
       setLoading(false);
@@ -122,31 +124,26 @@ export default function Cases() {
   return (
     <div className="space-y-6">
       {/* 1. Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-white tracking-tight">Investigation Workspace</h1>
-            <span className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-purple-950 text-purple-400 border border-purple-800">
-              AUDITED CASES
-            </span>
-          </div>
-          <p className="text-xs text-slate-400">
-            Structured forensic investigations, evidence documentation, and ground-truth fraud outcome filing.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title="Cases"
+        description="Track investigations from initial review through resolution, with evidence and analyst notes in one place."
+        actions={(
+          <>
           <Button size="sm" onClick={() => setShowNew(true)} className="text-xs">
-            <Plus size={14} /> Open Case
+            <Plus size={14} /> Open case
           </Button>
           <button
             onClick={fetchCases}
+            type="button"
+            aria-label="Refresh cases"
             className="p-2 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white rounded-xl transition-colors"
           >
             <RefreshCw size={13} className={loading ? 'animate-spin text-cyan-400' : ''} />
           </button>
-        </div>
-      </div>
+          </>
+        )}
+      />
+      {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
 
       {/* 2. Search & Filter Bar */}
       <div className="flex gap-2 flex-wrap">
@@ -210,6 +207,15 @@ export default function Cases() {
                 <tr>
                   <td colSpan={7}>
                     <TableSkeleton rows={6} cols={7} />
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={7} className="p-6 text-center">
+                    <p className="text-sm text-rose-300">{error}</p>
+                    <button type="button" onClick={fetchCases} className="mt-3 text-xs font-semibold text-cyan-300 hover:text-cyan-200">
+                      Retry
+                    </button>
                   </td>
                 </tr>
               ) : cases.length === 0 ? (

@@ -13,7 +13,7 @@ cd D:\Final\securepay\server
 if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 # Seed deterministic test accounts and initial data
 node src/scripts/seed.js
-# Start development server on port 5000
+# Start development server on port 5001
 npm run dev
 ```
 

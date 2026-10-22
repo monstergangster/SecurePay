@@ -1,21 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ScrollText, RefreshCw, Search, ShieldAlert, Lock, CheckCircle2 } from 'lucide-react';
+import { ScrollText, RefreshCw } from 'lucide-react';
 import api from '../services/api';
 import { Select } from '../components/ui/Input';
 import { Pagination } from '../components/ui/Pagination';
 import { EmptyState, TableSkeleton } from '../components/ui/EmptyState';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+import { PageHeader } from '../components/ui/PageHeader';
 
 export default function AuditLogs() {
   const [logs, setLogs] = useState([]);
   const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [page, setPage] = useState(1);
   const [action, setAction] = useState('');
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
+    setError('');
     try {
       const params = { page, limit: 20 };
       if (action) params.action = action;
@@ -23,6 +26,9 @@ export default function AuditLogs() {
       setLogs(res.data.data || []);
       setMeta(res.data.meta);
     } catch {
+      setLogs([]);
+      setMeta(null);
+      setError('Unable to load audit logs. Check your access and connection, then try again.');
       toast.error('Failed to load security audit trail');
     } finally {
       setLoading(false);
@@ -35,27 +41,21 @@ export default function AuditLogs() {
 
   return (
     <div className="space-y-6">
-      {/* 1. Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-white tracking-tight">Security Audit Trail</h1>
-            <span className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-cyan-950 text-cyan-400 border border-cyan-800">
-              IMMUTABLE LOG
-            </span>
-          </div>
-          <p className="text-xs text-slate-400">
-            Cryptographically timestamped log of analyst reviews, policy changes, authentication, and remediation events.
-          </p>
-        </div>
-
-        <button
-          onClick={fetchLogs}
-          className="p-2 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white rounded-xl transition-colors self-start sm:self-auto"
-        >
-          <RefreshCw size={13} className={loading ? 'animate-spin text-cyan-400' : ''} />
-        </button>
-      </div>
+      <PageHeader
+        title="Audit Logs"
+        description="Review recorded account, policy, and investigation activity."
+        actions={(
+          <button
+            type="button"
+            onClick={fetchLogs}
+            aria-label="Refresh audit logs"
+            className="p-2 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white rounded-xl transition-colors"
+          >
+            <RefreshCw size={13} className={loading ? 'animate-spin text-cyan-400' : ''} />
+          </button>
+        )}
+      />
+      {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
 
       {/* 2. Action Filter */}
       <div className="flex gap-2">
@@ -101,6 +101,15 @@ export default function AuditLogs() {
                 <tr>
                   <td colSpan={6}>
                     <TableSkeleton rows={8} cols={6} />
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={6} className="p-6 text-center">
+                    <p className="text-sm text-rose-300">{error}</p>
+                    <button type="button" onClick={fetchLogs} className="mt-3 text-xs font-semibold text-cyan-300 hover:text-cyan-200">
+                      Retry
+                    </button>
                   </td>
                 </tr>
               ) : logs.length === 0 ? (

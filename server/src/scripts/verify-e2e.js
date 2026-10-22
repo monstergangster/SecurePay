@@ -45,6 +45,23 @@ async function runE2E() {
   const token = loginRes.body.data.token;
   console.log('   ✓ Admin login successful. JWT token received.');
 
+  const analystLogin = await request(app)
+    .post('/api/v1/auth/login')
+    .send({
+      email: process.env.SEED_ANALYST_EMAIL || 'analyst@securepay.dev',
+      password: process.env.SEED_ANALYST_PASSWORD || 'Analyst@SecurePay2024',
+    });
+  if (analystLogin.status !== 200 || !analystLogin.body.data?.token) {
+    throw new Error(`Analyst login failed (${analystLogin.status}).`);
+  }
+  const analystAdminRoute = await request(app)
+    .get('/api/v1/users')
+    .set('Authorization', `Bearer ${analystLogin.body.data.token}`);
+  if (analystAdminRoute.status !== 403) {
+    throw new Error(`Expected analyst access to administrator route to be denied; received ${analystAdminRoute.status}.`);
+  }
+  console.log('   ✓ Analyst access to administrator-only user management was denied.');
+
   // Step 2: CSV Batch Ingestion & Risk Assessment
   console.log('\n2. Testing CSV Transaction Ingestion & Assessment (/api/v1/imports/csv)...');
   const testTxIdHigh = `TXN-E2E-HIGH-${Date.now()}`;
@@ -65,12 +82,54 @@ async function runE2E() {
   }
   console.log(`   ✓ CSV imported successfully: ${importRes.body.data.summary.accepted} transactions accepted.`);
 
+  const retryCsv = [
+    'transactionId,customerId,amount,currency,channel,timestamp',
+    `${testTxIdNorm},CUST-E2E-1,150.00,INR,card,2026-10-13T10:00:00Z`,
+    `TXN-E2E-INVALID-${Date.now()},CUST-E2E-3,1.001,INR,card,2026-10-13T10:00:00Z`,
+  ].join('\n');
+  const retryImportRes = await request(app)
+    .post('/api/v1/imports/csv')
+    .set('Authorization', `Bearer ${token}`)
+    .attach('file', Buffer.from(retryCsv), 'e2e_retry_transactions.csv');
+  const retrySummary = retryImportRes.body.data?.summary;
+  if (
+    retryImportRes.status !== 200
+    || retrySummary?.duplicates !== 1
+    || retrySummary?.invalid !== 1
+    || retrySummary?.rejected !== 2
+    || retrySummary?.errors?.length !== 2
+  ) {
+    throw new Error(`CSV duplicate and invalid-row handling failed (${retryImportRes.status}).`);
+  }
+  console.log('   ✓ CSV retry reports duplicate and invalid rows without duplicating data.');
+
   // Step 3: Verify Transactions & Risk Assessment
   console.log('\n3. Verifying Ingested Transactions in Database...');
   const highTx = await Transaction.findOne({ transactionId: testTxIdHigh });
   if (!highTx) throw new Error('High risk transaction not found in DB');
   console.log(`   ✓ High-risk transaction found: Score=${highTx.riskScore}, Level=${highTx.riskLevel}, Status=${highTx.status}`);
   if (highTx.riskScore < 55) throw new Error(`Expected high risk score (>=55), got ${highTx.riskScore}`);
+
+  const alertSearchRes = await request(app)
+    .get(`/api/v1/alerts?search=${encodeURIComponent(testTxIdHigh)}&severity=critical&status=open&page=1&limit=1`)
+    .set('Authorization', `Bearer ${token}`);
+  if (
+    alertSearchRes.status !== 200
+    || alertSearchRes.body.data?.length !== 1
+    || alertSearchRes.body.meta?.page !== 1
+    || alertSearchRes.body.meta?.limit !== 1
+  ) {
+    throw new Error('Alert search, severity/status filters, or pagination failed.');
+  }
+  console.log('   ✓ Alert search, severity/status filters, and pagination returned the expected record.');
+
+  const invalidAlertRes = await request(app)
+    .get('/api/v1/alerts/not-a-valid-id')
+    .set('Authorization', `Bearer ${token}`);
+  if (invalidAlertRes.status !== 400) {
+    throw new Error(`Expected invalid alert ID to return HTTP 400, received ${invalidAlertRes.status}.`);
+  }
+  console.log('   ✓ Invalid alert IDs return a client error instead of a server error.');
 
   // Step 4: Verify Alert Generation
   console.log('\n4. Verifying Alert Generation for Flagged Transaction...');
@@ -125,7 +184,7 @@ async function runE2E() {
     .get('/api/v1/reports/transactions/export')
     .set('Authorization', `Bearer ${token}`);
 
-  if (exportRes.status !== 200 || !exportRes.text.includes('Transaction ID,Customer ID,Amount')) {
+  if (exportRes.status !== 200 || !exportRes.text.includes('"Transaction ID","Customer ID","Amount"')) {
     throw new Error(`Report export failed (${exportRes.status})`);
   }
   console.log(`   ✓ Transaction CSV export successful (${exportRes.text.split('\n').length} rows exported).`);
@@ -179,6 +238,44 @@ async function runE2E() {
     throw new Error(`Webhook deduplication failed (${duplicateRes.status}): ${JSON.stringify(duplicateRes.body)}`);
   }
   console.log('   ✓ Idempotent deduplication verified: duplicate webhook safely ignored.');
+
+  const invalidWebhookPayload = {
+    eventId: `EVT-E2E-INVALID-${Date.now()}`,
+    eventType: 'payment.completed',
+    data: {
+      transactionId: `TXN-WB-INVALID-${Date.now()}`,
+      customerId: 'CUST-WB-E2E',
+      amount: 12500,
+      currency: 'INR',
+      channel: 'crypto',
+      timestamp: new Date().toISOString(),
+    },
+  };
+  const invalidWebhookRes = await request(app)
+    .post('/api/v1/webhooks/receive')
+    .set('X-Provider', 'simulator')
+    .set('X-SecurePay-Signature', `t=${Math.floor(Date.now() / 1000)},v1=${'0'.repeat(64)}`)
+    .set('Content-Type', 'application/json')
+    .send(invalidWebhookPayload);
+  if (invalidWebhookRes.status !== 401) {
+    throw new Error(`Expected tampered webhook to be rejected, received ${invalidWebhookRes.status}.`);
+  }
+  if (await Transaction.exists({ transactionId: invalidWebhookPayload.data.transactionId })) {
+    throw new Error('Invalid webhook unexpectedly persisted a transaction.');
+  }
+  console.log('   ✓ Invalid webhook signature rejected without persisting a transaction.');
+
+  const dashboardRes = await request(app)
+    .get('/api/v1/analytics/dashboard')
+    .set('Authorization', `Bearer ${token}`);
+  const actualTransactionCount = await Transaction.countDocuments();
+  if (
+    dashboardRes.status !== 200
+    || dashboardRes.body.data?.summary?.totalTx !== actualTransactionCount
+  ) {
+    throw new Error('Dashboard transaction count does not match persisted transactions.');
+  }
+  console.log('   ✓ Dashboard transaction count matches MongoDB records.');
 
   console.log('\n=== ALL END-TO-END VERIFICATION FLOWS COMPLETED SUCCESSFULLY ===');
 }

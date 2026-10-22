@@ -3,15 +3,12 @@ import {
   UploadCloud,
   FileSpreadsheet,
   CheckCircle2,
-  AlertTriangle,
   Play,
-  ArrowRight,
-  Database,
-  Cpu,
 } from 'lucide-react';
 import api from '../services/api';
 import { Card, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { PageHeader } from '../components/ui/PageHeader';
 import toast from 'react-hot-toast';
 
 export default function Import() {
@@ -83,30 +80,23 @@ export default function Import() {
   return (
     <div className="space-y-6">
       {/* 1. Header */}
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <h1 className="text-2xl font-bold text-white tracking-tight">Data Ingestion & Simulation</h1>
-          <span className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-cyan-950 text-cyan-400 border border-cyan-800">
-            PIPELINE
-          </span>
-        </div>
-        <p className="text-xs text-slate-400">
-          Batch ingest historical records via validated CSV or test the real-time detection pipeline with simulated webhook streams.
-        </p>
-      </div>
+      <PageHeader
+        title="Data Import"
+        description="Upload a CSV file to assess payment records, or run the webhook simulator with test data."
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* CSV Ingestion */}
         <Card>
           <CardHeader>
-            <CardTitle>BATCH CSV INGESTION ENGINE</CardTitle>
+            <CardTitle>Import a CSV file</CardTitle>
           </CardHeader>
           <form onSubmit={handleUpload} className="space-y-4">
             <div className="border-2 border-dashed border-slate-800 rounded-2xl p-7 text-center hover:border-cyan-500/80 transition-colors bg-slate-950/40">
               <UploadCloud size={38} className="mx-auto text-cyan-400 mb-2" />
               <p className="text-sm text-slate-200 font-semibold">Select or drag CSV batch file</p>
               <p className="text-xs text-slate-400 mt-1">
-                Schema: <code className="font-mono text-cyan-300">transactionId, customerId, amount, currency, timestamp</code>
+                Required columns: <code className="font-mono text-cyan-300">transactionId, customerId, amount, currency, timestamp</code>
               </p>
               <input
                 type="file"
@@ -119,6 +109,7 @@ export default function Import() {
                   Selected File: {file.name}
                 </p>
               )}
+              <p className="mt-2 text-xs text-slate-500">Accepted format: CSV. Channel and merchant details are optional. Download the template for an example.</p>
             </div>
 
             <div className="flex items-center justify-between pt-2">
@@ -140,7 +131,11 @@ export default function Import() {
               <h4 className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
                 Ingestion Results Summary
               </h4>
-              <div className="grid grid-cols-4 gap-2 text-center pt-1 font-mono text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center pt-1 font-mono text-xs">
+                <div className="p-2.5 bg-slate-900/90 rounded-xl border border-slate-800">
+                  <p className="text-slate-500 text-[10px] uppercase">Total</p>
+                  <p className="text-base font-bold text-slate-200">{importSummary.total || 0}</p>
+                </div>
                 <div className="p-2.5 bg-slate-900/90 rounded-xl border border-slate-800">
                   <p className="text-slate-500 text-[10px] uppercase">Accepted</p>
                   <p className="text-base font-bold text-emerald-400">{importSummary.accepted || 0}</p>
@@ -158,6 +153,15 @@ export default function Import() {
                   <p className="text-base font-bold text-slate-400">{importSummary.rejected || 0}</p>
                 </div>
               </div>
+              {importSummary.errors?.length > 0 && (
+                <ul className="space-y-1 border-t border-slate-800 pt-2 text-xs text-amber-200" aria-label="Import row errors">
+                  {importSummary.errors.map((item, index) => (
+                    <li key={`${item.row}-${item.transactionId || index}`}>
+                      Row {item.row}{item.transactionId ? ` (${item.transactionId})` : ''}: {item.errors.join('; ')}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
         </Card>

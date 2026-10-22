@@ -31,10 +31,18 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    try { await api.post('/auth/logout'); } catch {}
-    localStorage.removeItem('sp_token');
-    localStorage.removeItem('sp_user');
-    setUser(null);
+    let auditRecorded = false;
+    try {
+      await api.post('/auth/logout');
+      auditRecorded = true;
+    } catch {
+      auditRecorded = false;
+    } finally {
+      localStorage.removeItem('sp_token');
+      localStorage.removeItem('sp_user');
+      setUser(null);
+    }
+    return auditRecorded;
   };
 
   return (

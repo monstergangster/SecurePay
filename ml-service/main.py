@@ -8,13 +8,17 @@ from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any, Literal
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 import json
 import math
+import logging
 import joblib
 import numpy as np
 from pydantic import field_validator
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 app = FastAPI(
     title="SecurePay Risk Analysis Service",
@@ -24,10 +28,18 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+configured_frontend_origins = [
+    origin.strip()
+    for origin in os.getenv("FRONTEND_URL", "").split(",")
+    if origin.strip()
+]
+if os.getenv("APP_ENV", "development").lower() != "production":
+    configured_frontend_origins.extend(["http://localhost:5173", "http://127.0.0.1:5173"])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5000", "http://localhost:5173"],
-    allow_credentials=True,
+    allow_origins=configured_frontend_origins,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -39,6 +51,17 @@ REPORT_PATH = os.path.join(MODEL_DIR, "evaluation_report.json")
 # Global model state
 ML_MODEL = None
 MODEL_METADATA = None
+FEATURE_NAMES = [
+    "amount_normalized",
+    "amount_zscore_clamped",
+    "is_high_amount",
+    "is_suspicious_channel",
+    "is_unusual_hour",
+    "is_round_amount",
+    "velocity_score",
+    "recent_failures_ratio",
+]
+logger = logging.getLogger("securepay.ml")
 
 
 def load_model():
@@ -46,16 +69,24 @@ def load_model():
     if os.path.exists(MODEL_PATH):
         try:
             artifact = joblib.load(MODEL_PATH)
-            ML_MODEL = artifact["model"]
+            model = artifact["model"]
+            features = artifact.get("features")
+            if features != FEATURE_NAMES or getattr(model, "n_features_in_", None) != len(FEATURE_NAMES):
+                raise ValueError("Model feature schema does not match inference feature schema.")
+            ML_MODEL = model
             MODEL_METADATA = {
                 "version": artifact.get("version", "1.0.0"),
-                "features": artifact.get("features", []),
+                "features": features,
                 "score_calibration": artifact.get("score_calibration", {}),
                 "trained_at": artifact.get("trained_at"),
             }
-        except Exception as e:
+        except Exception:
             ML_MODEL = None
-            MODEL_METADATA = {"error": str(e)}
+            MODEL_METADATA = {"status": "unavailable", "error": "Model artifact is invalid or incompatible."}
+            logger.exception("Unable to load compatible anomaly model artifact")
+    else:
+        ML_MODEL = None
+        MODEL_METADATA = {"status": "unavailable", "error": "Model artifact is missing."}
 
 
 # Load model at startup
@@ -67,13 +98,13 @@ class TransactionInput(BaseModel):
     customer_id: str
     amount: float = Field(gt=0, allow_inf_nan=False)
     currency: Literal["INR"] = "INR"
-    channel: str = "other"
+    channel: Literal["card", "bank_transfer", "upi", "wallet", "crypto", "other"] = "other"
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     merchant_id: Optional[str] = None
-    recent_transaction_count: Optional[int] = 0
-    avg_customer_amount: Optional[float] = None
-    customer_amount_std: Optional[float] = None
-    failed_attempts: Optional[int] = 0
+    recent_transaction_count: Optional[int] = Field(default=0, ge=0)
+    avg_customer_amount: Optional[float] = Field(default=None, ge=0, allow_inf_nan=False)
+    customer_amount_std: Optional[float] = Field(default=None, ge=0, allow_inf_nan=False)
+    failed_attempts: Optional[int] = Field(default=0, ge=0)
 
     @field_validator("amount", "avg_customer_amount", "customer_amount_std")
     @classmethod
@@ -108,7 +139,8 @@ class RiskResponse(BaseModel):
 
 
 def extract_features(tx: TransactionInput):
-    hour = tx.timestamp.hour
+    timestamp_utc = tx.timestamp.replace(tzinfo=timezone.utc) if tx.timestamp.tzinfo is None else tx.timestamp.astimezone(timezone.utc)
+    hour = timestamp_utc.hour
     is_unusual_hour = 1 <= hour <= 5
     is_high_amount = tx.amount >= 10000.0
     is_suspicious_channel = tx.channel.lower() in {"crypto"}
@@ -163,12 +195,13 @@ def root():
 
 @app.get("/health")
 def health_check():
+    model_loaded = ML_MODEL is not None
     return {
-        "status": "operational",
+        "status": "operational" if model_loaded else "degraded",
         "service": "SecurePay Risk Analysis Service",
         "version": "1.0.0",
         "timestamp": datetime.utcnow().isoformat(),
-        "ml_model_deployed": ML_MODEL is not None,
+        "ml_model_deployed": model_loaded,
         "model_metadata": MODEL_METADATA,
     }
 
@@ -239,10 +272,11 @@ def analyze_transaction(tx: TransactionInput):
             explanation=explanations,
             service_status="operational",
         )
-    except Exception as e:
+    except Exception:
+        logger.exception("Anomaly model inference failed")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Inference error: {str(e)}",
+            detail="Anomaly model inference failed.",
         )
 
 

@@ -1,4 +1,5 @@
 const Alert = require('../models/Alert');
+const Transaction = require('../models/Transaction');
 const { success, error } = require('../utils/response');
 const { getPagination, paginationMeta } = require('../utils/pagination');
 const auditLogger = require('../utils/auditLogger');
@@ -10,7 +11,19 @@ exports.getAlerts = async (req, res) => {
     if (req.query.status) filter.status = req.query.status;
     if (req.query.severity) filter.severity = req.query.severity;
     if (req.query.assignedTo) filter.assignedTo = req.query.assignedTo;
-    if (req.query.search) filter.title = { $regex: req.query.search, $options: 'i' };
+    const search = String(req.query.search || '').trim();
+    if (search) {
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchPattern = new RegExp(escapedSearch, 'i');
+      const matchingTransactionIds = await Transaction.distinct('_id', {
+        transactionId: searchPattern,
+      });
+      filter.$or = [
+        { title: searchPattern },
+        { alertId: searchPattern },
+        { transactionId: { $in: matchingTransactionIds } },
+      ];
+    }
     const [alerts, total] = await Promise.all([
       Alert.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).populate('transactionId', 'transactionId amount currency customerId').populate('assignedTo', 'name email'),
       Alert.countDocuments(filter),
@@ -21,6 +34,9 @@ exports.getAlerts = async (req, res) => {
 
 exports.getAlert = async (req, res) => {
   try {
+    if (!/^[a-f\d]{24}$/i.test(req.params.id)) {
+      return error(res, 'Invalid alert identifier', 400);
+    }
     const alert = await Alert.findById(req.params.id).populate('transactionId').populate('assignedTo', 'name email').populate('caseId', 'caseId title status').populate('comments.author', 'name email');
     if (!alert) return error(res, 'Alert not found', 404);
     return success(res, alert, 'Alert retrieved');

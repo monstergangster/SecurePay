@@ -67,14 +67,14 @@ const extractCustomerBehavioralFeatures = async (currentTx, options = {}) => {
     query.transactionId = { $ne: currentTx.transactionId };
   }
 
-  let priorTxs = [];
+  let priorTxs;
   try {
     priorTxs = await Transaction.find(query)
       .sort({ timestamp: -1 })
       .select('amount currency channel timestamp status deviceMetadata');
   } catch (err) {
-    logger.warn(`Failed to fetch customer history for ${customerId}: ${err.message}`);
-    priorTxs = [];
+    logger.error(`Failed to fetch customer history for ${customerId}: ${err.message}`);
+    throw err;
   }
 
   // 2. Evaluate historical profile
