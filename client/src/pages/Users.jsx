@@ -77,21 +77,21 @@ export default function Users() {
             onClick={fetchUsers}
             type="button"
             aria-label="Refresh users"
-            className="p-2 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white rounded-xl transition-colors"
+            className="p-2 bg-white border border-slate-200 text-slate-600 hover:text-slate-900 rounded-xl transition-colors"
           >
-            <RefreshCw size={13} className={loading ? 'animate-spin text-cyan-400' : ''} />
+            <RefreshCw size={13} className={loading ? 'animate-spin text-blue-700' : ''} />
           </button>
           </>
         )}
       />
-      {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-rose-700">{error}</p>}
 
       {/* 2. Users Table */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-white/90 border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[700px]">
             <thead>
-              <tr className="border-b border-slate-800 text-left text-[11px] font-mono text-slate-400 uppercase tracking-wider">
+              <tr className="border-b border-slate-200 text-left text-[11px] font-mono text-slate-600 uppercase tracking-wider">
                 <th className="px-5 py-3.5">Personnel Name & Email</th>
                 <th className="px-5 py-3.5">Role Scope</th>
                 <th className="px-5 py-3.5">Access State</th>
@@ -100,7 +100,7 @@ export default function Users() {
                 <th className="px-5 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 text-xs">
+            <tbody className="divide-y divide-slate-200 text-xs">
               {loading ? (
                 <tr>
                   <td colSpan={6}>
@@ -110,8 +110,8 @@ export default function Users() {
               ) : error ? (
                 <tr>
                   <td colSpan={6} className="p-6 text-center">
-                    <p className="text-sm text-rose-300">{error}</p>
-                    <button type="button" onClick={fetchUsers} className="mt-3 text-xs font-semibold text-cyan-300 hover:text-cyan-200">
+                    <p className="text-sm text-rose-700">{error}</p>
+                    <button type="button" onClick={fetchUsers} className="mt-3 text-xs font-semibold text-blue-700 hover:text-blue-700">
                       Retry
                     </button>
                   </td>
@@ -128,10 +128,10 @@ export default function Users() {
                 </tr>
               ) : (
                 users.map((u) => (
-                  <tr key={u._id} className="hover:bg-slate-800/40 transition-colors">
+                  <tr key={u._id} className="hover:bg-slate-100/40 transition-colors">
                     <td className="px-5 py-3.5">
-                      <p className="text-sm font-semibold text-slate-100">{u.name}</p>
-                      <p className="text-xs font-mono text-slate-400 mt-0.5">{u.email}</p>
+                      <p className="text-sm font-semibold text-slate-900">{u.name}</p>
+                      <p className="text-xs font-mono text-slate-600 mt-0.5">{u.email}</p>
                     </td>
 
                     <td className="px-5 py-3.5">
@@ -140,21 +140,21 @@ export default function Users() {
 
                     <td className="px-5 py-3.5">
                       {u.isActive ? (
-                        <span className="inline-flex items-center gap-1.5 text-xs font-mono font-semibold text-emerald-400 bg-emerald-950/60 px-2.5 py-0.5 rounded-md border border-emerald-800/60">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-mono font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">
                           <CheckCircle2 size={11} /> ACTIVE
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 text-xs font-mono font-semibold text-rose-400 bg-rose-950/60 px-2.5 py-0.5 rounded-md border border-rose-800/60">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-mono font-semibold text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-md border border-rose-200">
                           <XCircle size={11} /> REVOKED
                         </span>
                       )}
                     </td>
 
-                    <td className="px-5 py-3.5 font-mono text-slate-400 text-[11px] whitespace-nowrap">
+                    <td className="px-5 py-3.5 font-mono text-slate-600 text-[11px] whitespace-nowrap">
                       {u.lastLogin ? format(new Date(u.lastLogin), 'MMM dd, HH:mm') : 'No recorded login'}
                     </td>
 
-                    <td className="px-5 py-3.5 font-mono text-slate-400 text-[11px] whitespace-nowrap">
+                    <td className="px-5 py-3.5 font-mono text-slate-600 text-[11px] whitespace-nowrap">
                       {u.createdAt ? format(new Date(u.createdAt), 'MMM dd, yyyy') : '—'}
                     </td>
 
@@ -211,7 +211,7 @@ export default function Users() {
             <option value="analyst">Fraud Analyst (Investigation & Alerts)</option>
             <option value="admin">Administrator (Full System, Rules, and Policies)</option>
           </Select>
-          <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
             <Button type="button" variant="secondary" size="sm" onClick={() => setShowAdd(false)}>
               Cancel
             </Button>

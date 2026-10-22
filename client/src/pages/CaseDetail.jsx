@@ -3,13 +3,6 @@ import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
   Clock,
-  FolderOpen,
-  MessageSquare,
-  ShieldCheck,
-  ShieldAlert,
-  CheckCircle2,
-  AlertTriangle,
-  User,
   Plus,
   ExternalLink,
 } from 'lucide-react';
@@ -18,22 +11,26 @@ import { RiskBadge } from '../components/ui/RiskBadge';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Card, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Select, Textarea, Input } from '../components/ui/Input';
+import { Select, Textarea } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { Skeleton } from '../components/ui/EmptyState';
 import toast from 'react-hot-toast';
 import { format, formatDistanceToNow } from 'date-fns';
 import { formatINR } from '../utils/currency';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function CaseDetail() {
   const { id } = useParams();
+  const { isAdmin } = useAuth();
   const [caseDoc, setCaseDoc] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [showNote, setShowNote] = useState(false);
   const [showUpdate, setShowUpdate] = useState(false);
   const [noteText, setNoteText] = useState('');
-  const [updateForm, setUpdateForm] = useState({ status: '', outcome: '', resolutionNote: '' });
+  const [updateForm, setUpdateForm] = useState({ status: '', outcome: '', resolutionNote: '', assignedTo: '' });
+  const [assignableUsers, setAssignableUsers] = useState([]);
+  const [assigneesUnavailable, setAssigneesUnavailable] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const fetchCase = useCallback(async () => {
@@ -47,6 +44,7 @@ export default function CaseDetail() {
         status: c.status,
         outcome: c.outcome || '',
         resolutionNote: c.resolutionNote || '',
+        assignedTo: c.assignedTo?._id || '',
       });
     } catch (error) {
       setCaseDoc(null);
@@ -94,6 +92,7 @@ export default function CaseDetail() {
         payload.outcome = updateForm.outcome;
         payload.resolutionNote = updateForm.resolutionNote;
       }
+      if (isAdmin) payload.assignedTo = updateForm.assignedTo || null;
       await api.patch(`/cases/${id}`, payload);
       setShowUpdate(false);
       toast.success('Investigation case updated successfully.');
@@ -103,6 +102,23 @@ export default function CaseDetail() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const openUpdateModal = async () => {
+    if (isAdmin) {
+      setAssigneesUnavailable(false);
+      try {
+        const response = await api.get('/users', { params: { limit: 100, isActive: true } });
+        if (!Array.isArray(response.data?.data)) {
+          throw new Error('The user service returned an unexpected response.');
+        }
+        setAssignableUsers(response.data.data);
+      } catch (error) {
+        setAssigneesUnavailable(true);
+        toast.error(error.response?.data?.message || error.message || 'Could not load active investigators.');
+      }
+    }
+    setShowUpdate(true);
   };
 
   if (loading) {
@@ -116,8 +132,8 @@ export default function CaseDetail() {
 
   if (!caseDoc) {
     return (
-      <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center">
-        <p role="alert" className="text-sm text-slate-300">{loadError || 'Case record not found.'}</p>
+      <div className="p-8 rounded-2xl bg-white border border-slate-200 text-center">
+        <p role="alert" className="text-sm text-slate-700">{loadError || 'Case record not found.'}</p>
         <div className="mt-4 flex justify-center gap-3">
           {loadError && (
             <Button size="sm" onClick={() => { setLoading(true); fetchCase(); }}>Retry</Button>
@@ -137,22 +153,22 @@ export default function CaseDetail() {
         <div className="flex items-center gap-3">
           <Link
             to="/cases"
-            className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors"
+            className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-900 transition-colors"
           >
             <ArrowLeft size={18} />
           </Link>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-bold text-white tracking-tight">{caseDoc.title}</h1>
+              <h1 className="text-xl font-bold text-slate-900 tracking-tight">{caseDoc.title}</h1>
               <RiskBadge level={caseDoc.priority} size="sm" />
               <StatusBadge status={caseDoc.status} size="sm" />
               {caseDoc.outcome && <StatusBadge status={caseDoc.outcome} size="sm" />}
             </div>
-            <p className="text-xs text-slate-400 font-mono mt-0.5">Case Reference: {caseDoc.caseId}</p>
+            <p className="text-xs text-slate-600 font-mono mt-0.5">Case Reference: {caseDoc.caseId}</p>
           </div>
         </div>
 
-        <Button size="sm" onClick={() => setShowUpdate(true)} className="text-xs">
+        <Button size="sm" onClick={openUpdateModal} className="text-xs">
           Update Status / Outcome
         </Button>
       </div>
@@ -164,24 +180,24 @@ export default function CaseDetail() {
             <CardHeader>
               <CardTitle>INVESTIGATION SUMMARY</CardTitle>
             </CardHeader>
-            <p className="text-sm text-slate-300 leading-relaxed mb-5">
+            <p className="text-sm text-slate-700 leading-relaxed mb-5">
               {caseDoc.description || 'No initial summary recorded.'}
             </p>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-800 text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-200 text-xs">
               <div>
                 <p className="text-slate-500 uppercase font-mono text-[10px]">Created By</p>
-                <p className="text-slate-200 mt-0.5 font-medium">{caseDoc.createdBy?.name || 'Security Lead'}</p>
+                <p className="text-slate-800 mt-0.5 font-medium">{caseDoc.createdBy?.name || 'Security Lead'}</p>
               </div>
 
               <div>
                 <p className="text-slate-500 uppercase font-mono text-[10px]">Assigned Investigator</p>
-                <p className="text-slate-200 mt-0.5 font-medium">{caseDoc.assignedTo?.name || 'Unassigned Queue'}</p>
+                <p className="text-slate-800 mt-0.5 font-medium">{caseDoc.assignedTo?.name || 'Unassigned Queue'}</p>
               </div>
 
               <div>
                 <p className="text-slate-500 uppercase font-mono text-[10px]">Opened Date</p>
-                <p className="text-slate-300 mt-0.5 font-mono">
+                <p className="text-slate-700 mt-0.5 font-mono">
                   {caseDoc.createdAt ? format(new Date(caseDoc.createdAt), 'PPpp') : '—'}
                 </p>
               </div>
@@ -189,7 +205,7 @@ export default function CaseDetail() {
               {caseDoc.resolvedAt && (
                 <div>
                   <p className="text-slate-500 uppercase font-mono text-[10px]">Resolved Date</p>
-                  <p className="text-slate-300 mt-0.5 font-mono">{format(new Date(caseDoc.resolvedAt), 'PP')}</p>
+                  <p className="text-slate-700 mt-0.5 font-mono">{format(new Date(caseDoc.resolvedAt), 'PP')}</p>
                 </div>
               )}
 
@@ -204,11 +220,11 @@ export default function CaseDetail() {
             </div>
 
             {caseDoc.resolutionNote && (
-              <div className="mt-4 pt-4 border-t border-slate-800">
-                <p className="text-xs font-mono uppercase text-slate-400 font-semibold mb-1">
+              <div className="mt-4 pt-4 border-t border-slate-200">
+                <p className="text-xs font-mono uppercase text-slate-600 font-semibold mb-1">
                   Documented Resolution Findings
                 </p>
-                <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/80 text-xs text-slate-200 leading-relaxed">
+                <div className="p-3.5 rounded-xl bg-white/80 border border-slate-200/80 text-xs text-slate-800 leading-relaxed">
                   {caseDoc.resolutionNote}
                 </div>
               </div>
@@ -220,7 +236,7 @@ export default function CaseDetail() {
             <CardHeader>
               <div>
                 <CardTitle>INVESTIGATION EVIDENCE & NOTES ({caseDoc.notes?.length || 0})</CardTitle>
-                <p className="text-xs text-slate-400 mt-0.5">Chronological record of investigator findings</p>
+                <p className="text-xs text-slate-600 mt-0.5">Chronological record of investigator findings</p>
               </div>
               <Button size="sm" variant="secondary" onClick={() => setShowNote(true)}>
                 <Plus size={13} /> Add Finding
@@ -234,19 +250,19 @@ export default function CaseDetail() {
             ) : (
               <div className="space-y-3">
                 {caseDoc.notes.map((n, i) => (
-                  <div key={i} className="p-4 rounded-xl bg-slate-950/80 border border-slate-800">
+                  <div key={i} className="p-4 rounded-xl bg-white/80 border border-slate-200">
                     <div className="flex items-center justify-between gap-2 mb-1.5">
                       <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full bg-cyan-950 border border-cyan-800 flex items-center justify-center text-cyan-400 text-[10px] font-bold">
+                        <div className="w-5 h-5 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 text-[10px] font-bold">
                           {n.author?.name?.[0] || 'U'}
                         </div>
-                        <span className="text-xs font-semibold text-slate-200">{n.author?.name || 'Analyst'}</span>
+                        <span className="text-xs font-semibold text-slate-800">{n.author?.name || 'Analyst'}</span>
                       </div>
                       <span className="text-[10px] font-mono text-slate-500">
                         {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-300 leading-relaxed">{n.text}</p>
+                    <p className="text-xs text-slate-700 leading-relaxed">{n.text}</p>
                   </div>
                 ))}
               </div>
@@ -259,7 +275,7 @@ export default function CaseDetail() {
               <CardHeader>
                 <div>
                   <CardTitle>LINKED TRANSACTIONS ({caseDoc.transactions.length})</CardTitle>
-                  <p className="text-xs text-slate-400 mt-0.5">Payments subject to this investigation</p>
+                  <p className="text-xs text-slate-600 mt-0.5">Payments subject to this investigation</p>
                 </div>
               </CardHeader>
               <div className="space-y-2">
@@ -267,12 +283,12 @@ export default function CaseDetail() {
                   <Link
                     key={tx._id}
                     to={`/transactions/${tx._id}`}
-                    className="flex items-center justify-between p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 hover:border-slate-700 transition-colors"
+                    className="flex items-center justify-between p-3.5 rounded-xl bg-white/80 border border-slate-200 hover:border-slate-200 transition-colors"
                   >
                     <div>
-                      <p className="text-xs font-mono font-bold text-cyan-400">{tx.transactionId}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        {tx.customerId} · <strong className="text-slate-200">{formatINR(tx.amount, tx.currency || '')}</strong>
+                      <p className="text-xs font-mono font-bold text-blue-700">{tx.transactionId}</p>
+                      <p className="text-xs text-slate-600 mt-0.5">
+                        {tx.customerId} · <strong className="text-slate-800">{formatINR(tx.amount, tx.currency || '')}</strong>
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -296,7 +312,7 @@ export default function CaseDetail() {
                   <div key={i} className="flex gap-3 text-xs">
                     <Clock size={13} className="text-slate-500 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-slate-200 font-medium">{t.event}</p>
+                      <p className="text-slate-800 font-medium">{t.event}</p>
                       <p className="text-[11px] font-mono text-slate-500 mt-0.5">
                         {t.actor?.name || 'System'} ·{' '}
                         {t.timestamp ? formatDistanceToNow(new Date(t.timestamp), { addSuffix: true }) : ''}
@@ -321,13 +337,13 @@ export default function CaseDetail() {
                   <Link
                     key={a._id}
                     to={`/alerts/${a._id}`}
-                    className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 hover:border-slate-700 transition-colors block"
+                    className="p-3 rounded-xl bg-white/80 border border-slate-200 hover:border-slate-200 transition-colors block"
                   >
                     <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="text-xs font-mono font-bold text-slate-200 truncate">{a.alertId}</span>
+                      <span className="text-xs font-mono font-bold text-slate-800 truncate">{a.alertId}</span>
                       <RiskBadge level={a.severity} size="sm" />
                     </div>
-                    <p className="text-xs text-slate-400 line-clamp-1">{a.title}</p>
+                    <p className="text-xs text-slate-600 line-clamp-1">{a.title}</p>
                   </Link>
                 ))}
               </div>
@@ -371,6 +387,29 @@ export default function CaseDetail() {
             <option value="closed">Closed</option>
           </Select>
 
+          {isAdmin && (
+            <div>
+              <Select
+                label="Assigned investigator"
+                value={updateForm.assignedTo}
+                onChange={(e) => setUpdateForm({ ...updateForm, assignedTo: e.target.value })}
+                disabled={assigneesUnavailable}
+              >
+                <option value="">Unassigned</option>
+                {assignableUsers.map((investigator) => (
+                  <option key={investigator._id} value={investigator._id}>
+                    {investigator.name} ({investigator.role})
+                  </option>
+                ))}
+              </Select>
+              {assigneesUnavailable && (
+                <p role="status" className="mt-1 text-xs text-amber-700">
+                  Investigator options are unavailable. Status updates can still be saved.
+                </p>
+              )}
+            </div>
+          )}
+
           <Select
             label="Investigation Outcome (Required for resolution)"
             value={updateForm.outcome}
@@ -392,7 +431,7 @@ export default function CaseDetail() {
             />
           )}
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
             <Button variant="secondary" size="sm" onClick={() => setShowUpdate(false)}>
               Cancel
             </Button>

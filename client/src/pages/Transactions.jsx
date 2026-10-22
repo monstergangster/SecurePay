@@ -51,7 +51,7 @@ const NewTxModal = ({ isOpen, onClose, onSuccess }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Ingest Simulated Transaction">
       {error && (
-        <div className="mb-3 p-3 bg-rose-950/40 border border-rose-800/60 rounded-xl text-xs text-rose-400">
+        <div className="mb-3 p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700">
           {error}
         </div>
       )}
@@ -90,10 +90,10 @@ const NewTxModal = ({ isOpen, onClose, onSuccess }) => {
           onChange={(e) => upd('merchantId', e.target.value)}
           placeholder="MERCH-8821"
         />
-        <p className="text-xs text-slate-400 leading-relaxed">
+        <p className="text-xs text-slate-600 leading-relaxed">
           Demo transaction flagged with high amount or rapid succession will dynamically trigger heuristic rules.
         </p>
-        <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+        <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
           <Button type="button" variant="secondary" size="sm" onClick={onClose}>
             Cancel
           </Button>
@@ -202,9 +202,9 @@ export default function Transactions() {
             onClick={fetchTransactions}
             type="button"
             aria-label="Refresh transactions"
-            className="p-2 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white rounded-xl transition-colors"
+            className="p-2 bg-white border border-slate-200 text-slate-600 hover:text-slate-900 rounded-xl transition-colors"
           >
-            <RefreshCw size={13} className={loading ? 'animate-spin text-cyan-400' : ''} />
+            <RefreshCw size={13} className={loading ? 'animate-spin text-blue-700' : ''} />
           </button>
           </>
         )}
@@ -212,49 +212,49 @@ export default function Transactions() {
 
       {/* 2. KPI Strip (Section 15) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800">
-          <p className="text-[10px] font-mono uppercase text-slate-400 font-semibold mb-1">Total Monitored</p>
-          <p className="text-2xl font-bold font-mono text-white">{kpiAvailable ? kpi.total.toLocaleString() : '—'}</p>
+        <div className="p-3.5 rounded-xl bg-white/90 border border-slate-200">
+          <p className="text-[10px] font-mono uppercase text-slate-600 font-semibold mb-1">Total Monitored</p>
+          <p className="text-2xl font-bold font-mono text-slate-900">{kpiAvailable ? kpi.total.toLocaleString() : '—'}</p>
         </div>
-        <div className="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-900/40">
-          <p className="text-[10px] font-mono uppercase text-emerald-400 font-semibold mb-1">Normal / Approved</p>
-          <p className="text-2xl font-bold font-mono text-emerald-300">{kpiAvailable ? kpi.approved.toLocaleString() : '—'}</p>
+        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200">
+          <p className="text-[10px] font-mono uppercase text-emerald-700 font-semibold mb-1">Normal / Approved</p>
+          <p className="text-2xl font-bold font-mono text-emerald-700">{kpiAvailable ? kpi.approved.toLocaleString() : '—'}</p>
         </div>
-        <div className="p-3.5 rounded-xl bg-amber-950/20 border border-amber-900/40">
-          <p className="text-[10px] font-mono uppercase text-amber-400 font-semibold mb-1">Flagged Suspicious</p>
-          <p className="text-2xl font-bold font-mono text-amber-300">{kpiAvailable ? kpi.flagged.toLocaleString() : '—'}</p>
+        <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200">
+          <p className="text-[10px] font-mono uppercase text-amber-700 font-semibold mb-1">Flagged Suspicious</p>
+          <p className="text-2xl font-bold font-mono text-amber-700">{kpiAvailable ? kpi.flagged.toLocaleString() : '—'}</p>
         </div>
-        <div className="p-3.5 rounded-xl bg-orange-950/20 border border-orange-900/40">
-          <p className="text-[10px] font-mono uppercase text-orange-400 font-semibold mb-1">Elevated Risk</p>
-          <p className="text-2xl font-bold font-mono text-orange-300">{kpiAvailable ? kpi.highRisk.toLocaleString() : '—'}</p>
+        <div className="p-3.5 rounded-xl bg-orange-50 border border-orange-200">
+          <p className="text-[10px] font-mono uppercase text-orange-700 font-semibold mb-1">Elevated Risk</p>
+          <p className="text-2xl font-bold font-mono text-orange-700">{kpiAvailable ? kpi.highRisk.toLocaleString() : '—'}</p>
         </div>
-        <div className="p-3.5 rounded-xl bg-rose-950/25 border border-rose-900/50">
-          <p className="text-[10px] font-mono uppercase text-rose-400 font-semibold mb-1">Blocked Intercepts</p>
-          <p className="text-2xl font-bold font-mono text-rose-300">{kpiAvailable ? kpi.blocked.toLocaleString() : '—'}</p>
+        <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200">
+          <p className="text-[10px] font-mono uppercase text-rose-700 font-semibold mb-1">Blocked Intercepts</p>
+          <p className="text-2xl font-bold font-mono text-rose-700">{kpiAvailable ? kpi.blocked.toLocaleString() : '—'}</p>
         </div>
       </div>
-      {analyticsError && <p role="status" className="text-xs text-amber-300">{analyticsError} The transaction list is still available.</p>}
-      {transactionError && <p role="alert" className="text-sm text-rose-300">{transactionError}</p>}
+      {analyticsError && <p role="status" className="text-xs text-amber-700">{analyticsError} The transaction list is still available.</p>}
+      {transactionError && <p role="alert" className="text-sm text-rose-700">{transactionError}</p>}
 
       {/* 3. Search & Filter Bar */}
       <div className="space-y-3">
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600" />
             <input
               type="text"
               placeholder="Search by Transaction ID or Customer ID…"
               value={filters.search}
               onChange={(e) => upd('search', e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-1.5 px-3.5 py-2 text-xs rounded-xl border transition-colors ${
               showFilters
-                ? 'bg-cyan-950 border-cyan-700 text-cyan-400 font-semibold'
-                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                ? 'bg-blue-50 border-blue-700 text-blue-700 font-semibold'
+                : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900'
             }`}
           >
             <Filter size={13} /> Filters
@@ -262,7 +262,7 @@ export default function Transactions() {
         </div>
 
         {showFilters && (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 p-4 bg-slate-900/90 border border-slate-800 rounded-2xl">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 p-4 bg-white/90 border border-slate-200 rounded-2xl">
             <Select label="Status" value={filters.status} onChange={(e) => upd('status', e.target.value)}>
               <option value="">All Statuses</option>
               <option value="approved">Approved</option>
@@ -306,22 +306,22 @@ export default function Transactions() {
       </div>
 
       {/* 4. Transactions Table (Section 15) */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-white/90 border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[750px]">
             <thead>
-              <tr className="border-b border-slate-800 text-left text-[11px] font-mono text-slate-400 uppercase tracking-wider">
-                <th className="px-5 py-3.5">Transaction ID</th>
+              <tr className="border-b border-slate-200 text-left text-[11px] font-mono text-slate-600 uppercase tracking-wider">
+                <th className="px-5 py-3.5">Transaction reference</th>
                 <th className="px-5 py-3.5">Customer</th>
                 <th className="px-5 py-3.5">Amount</th>
                 <th className="px-5 py-3.5">Channel</th>
                 <th className="px-5 py-3.5">Status</th>
-                <th className="px-5 py-3.5">Risk Score</th>
-                <th className="px-5 py-3.5">Timestamp</th>
-                <th className="px-5 py-3.5 text-right">Inspect</th>
+                <th className="px-5 py-3.5">Risk level</th>
+                <th className="px-5 py-3.5">Date and time</th>
+                <th className="px-5 py-3.5 text-right">Details</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 text-xs">
+            <tbody className="divide-y divide-slate-200 text-xs">
               {loading ? (
                 <tr>
                   <td colSpan={8}>
@@ -331,8 +331,8 @@ export default function Transactions() {
               ) : transactionError ? (
                 <tr>
                   <td colSpan={8} className="p-6 text-center">
-                    <p className="text-sm text-rose-300">{transactionError}</p>
-                    <button type="button" onClick={fetchTransactions} className="mt-3 text-xs font-semibold text-cyan-300 hover:text-cyan-200">
+                    <p className="text-sm text-rose-700">{transactionError}</p>
+                    <button type="button" onClick={fetchTransactions} className="mt-3 text-xs font-semibold text-blue-700 hover:text-blue-700">
                       Retry
                     </button>
                   </td>
@@ -348,24 +348,15 @@ export default function Transactions() {
                   </td>
                 </tr>
               ) : (
-                txs.map((tx) => {
-                  const isBlocked = tx.status === 'blocked';
-                  const isFlagged = tx.status === 'flagged' || (tx.riskScore || 0) >= 55;
-                  return (
+                txs.map((tx) => (
                     <tr
                       key={tx._id}
-                      className={`hover:bg-slate-800/40 transition-colors ${
-                        isBlocked
-                          ? 'bg-rose-950/10'
-                          : isFlagged
-                          ? 'bg-amber-950/10'
-                          : ''
-                      }`}
+                      className="transition-colors hover:bg-slate-50"
                     >
                       <td className="px-5 py-3.5">
                         <Link
                           to={`/transactions/${tx._id}`}
-                          className="font-mono text-cyan-400 hover:text-cyan-300 font-bold tracking-tight"
+                          className="font-mono text-blue-700 hover:text-blue-700 font-bold tracking-tight"
                         >
                           {tx.transactionId}
                         </Link>
@@ -377,17 +368,17 @@ export default function Transactions() {
                       <td className="px-5 py-3.5">
                         <Link
                           to={`/customers/${tx.customerId}`}
-                          className="font-mono text-slate-300 hover:underline"
+                          className="font-mono text-slate-700 hover:underline"
                         >
                           {tx.customerId}
                         </Link>
                       </td>
 
-                      <td className="px-5 py-3.5 font-mono font-bold text-slate-100 whitespace-nowrap">
+                      <td className="px-5 py-3.5 font-mono font-bold text-slate-900 whitespace-nowrap">
                         {formatINR(tx.amount, tx.currency || '')}
                       </td>
 
-                      <td className="px-5 py-3.5 text-slate-400 capitalize font-medium">
+                      <td className="px-5 py-3.5 text-slate-600 capitalize font-medium">
                         {tx.channel?.replace(/_/g, ' ') || 'card'}
                       </td>
 
@@ -398,28 +389,27 @@ export default function Transactions() {
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2">
                           <RiskBadge level={tx.riskLevel} size="sm" />
-                          <span className="font-mono font-bold text-slate-300">
+                          <span className="font-mono font-bold text-slate-700">
                             {tx.riskScore !== null && tx.riskScore !== undefined ? tx.riskScore : '—'}
                           </span>
                         </div>
                       </td>
 
-                      <td className="px-5 py-3.5 text-slate-400 font-mono text-[11px] whitespace-nowrap">
+                      <td className="px-5 py-3.5 text-slate-600 font-mono text-[11px] whitespace-nowrap">
                         {tx.timestamp ? format(new Date(tx.timestamp), 'MMM dd, HH:mm:ss') : '—'}
                       </td>
 
                       <td className="px-5 py-3.5 text-right">
                         <Link
                           to={`/transactions/${tx._id}`}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800 inline-block transition-colors"
+                          className="p-1.5 rounded-lg text-slate-600 hover:text-blue-700 hover:bg-slate-100 inline-block transition-colors"
                           title="Open Transaction Intelligence"
                         >
                           <Eye size={15} />
                         </Link>
                       </td>
                     </tr>
-                  );
-                })
+                ))
               )}
             </tbody>
           </table>

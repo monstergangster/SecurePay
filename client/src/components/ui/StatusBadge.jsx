@@ -3,31 +3,31 @@ import { CheckCircle2, AlertTriangle, ShieldX, Clock, Eye, AlertOctagon, HelpCir
 
 const statusConfigs = {
   // Transaction statuses
-  approved: { label: 'Approved', bg: 'bg-emerald-950/60', text: 'text-emerald-400', border: 'border-emerald-800/60', icon: CheckCircle2 },
-  flagged: { label: 'Flagged', bg: 'bg-amber-950/60', text: 'text-amber-400', border: 'border-amber-800/60', icon: AlertTriangle },
-  blocked: { label: 'Blocked', bg: 'bg-rose-950/70', text: 'text-rose-400', border: 'border-rose-800/70', icon: ShieldX },
-  pending: { label: 'Pending', bg: 'bg-slate-800/80', text: 'text-slate-400', border: 'border-slate-700', icon: Clock },
-  declined: { label: 'Declined', bg: 'bg-rose-950/60', text: 'text-rose-400', border: 'border-rose-800/60', icon: ShieldX },
-  reversed: { label: 'Reversed', bg: 'bg-purple-950/60', text: 'text-purple-400', border: 'border-purple-800/60', icon: Clock },
-  held_for_review: { label: 'Held for Review', bg: 'bg-amber-950/60', text: 'text-amber-400', border: 'border-amber-800/60', icon: Eye },
+  approved: { label: 'Approved', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', icon: CheckCircle2 },
+  flagged: { label: 'Flagged', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', icon: AlertTriangle },
+  blocked: { label: 'Blocked', bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200', icon: ShieldX },
+  pending: { label: 'Pending', bg: 'bg-slate-100/80', text: 'text-slate-600', border: 'border-slate-200', icon: Clock },
+  declined: { label: 'Declined', bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200', icon: ShieldX },
+  reversed: { label: 'Reversed', bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', icon: Clock },
+  held_for_review: { label: 'Held for Review', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', icon: Eye },
 
   // Alert & Case statuses
-  open: { label: 'Open', bg: 'bg-sky-950/60', text: 'text-sky-400', border: 'border-sky-800/60', icon: Clock },
-  in_review: { label: 'In Review', bg: 'bg-amber-950/60', text: 'text-amber-400', border: 'border-amber-800/60', icon: Eye },
-  in_progress: { label: 'In Progress', bg: 'bg-sky-950/60', text: 'text-sky-400', border: 'border-sky-800/60', icon: Clock },
-  escalated: { label: 'Escalated', bg: 'bg-orange-950/60', text: 'text-orange-400', border: 'border-orange-800/60', icon: AlertOctagon },
-  resolved: { label: 'Resolved', bg: 'bg-emerald-950/60', text: 'text-emerald-400', border: 'border-emerald-800/60', icon: CheckCircle2 },
-  closed: { label: 'Closed', bg: 'bg-slate-800/80', text: 'text-slate-400', border: 'border-slate-700', icon: CheckCircle2 },
-  false_positive: { label: 'False Positive', bg: 'bg-slate-800/80', text: 'text-slate-400', border: 'border-slate-700', icon: CheckCircle2 },
+  open: { label: 'Open', bg: 'bg-sky-50', text: 'text-sky-700', border: 'border-sky-200', icon: Clock },
+  in_review: { label: 'In Review', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', icon: Eye },
+  in_progress: { label: 'In Progress', bg: 'bg-sky-50', text: 'text-sky-700', border: 'border-sky-200', icon: Clock },
+  escalated: { label: 'Escalated', bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', icon: AlertOctagon },
+  resolved: { label: 'Resolved', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', icon: CheckCircle2 },
+  closed: { label: 'Closed', bg: 'bg-slate-100/80', text: 'text-slate-600', border: 'border-slate-200', icon: CheckCircle2 },
+  false_positive: { label: 'False Positive', bg: 'bg-slate-100/80', text: 'text-slate-600', border: 'border-slate-200', icon: CheckCircle2 },
 
   // Case outcomes
-  confirmed_fraud: { label: 'Confirmed Fraud', bg: 'bg-rose-950/80', text: 'text-rose-400', border: 'border-rose-800/80', icon: ShieldX },
-  legitimate: { label: 'Legitimate', bg: 'bg-emerald-950/60', text: 'text-emerald-400', border: 'border-emerald-800/60', icon: CheckCircle2 },
-  inconclusive: { label: 'Inconclusive', bg: 'bg-slate-800/80', text: 'text-slate-400', border: 'border-slate-700', icon: HelpCircle },
+  confirmed_fraud: { label: 'Confirmed Fraud', bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200', icon: ShieldX },
+  legitimate: { label: 'Legitimate', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', icon: CheckCircle2 },
+  inconclusive: { label: 'Inconclusive', bg: 'bg-slate-100/80', text: 'text-slate-600', border: 'border-slate-200', icon: HelpCircle },
 
   // User roles
-  admin: { label: 'Administrator', bg: 'bg-purple-950/60', text: 'text-purple-400', border: 'border-purple-800/60', icon: null },
-  analyst: { label: 'Fraud Analyst', bg: 'bg-cyan-950/60', text: 'text-cyan-400', border: 'border-cyan-800/60', icon: null },
+  admin: { label: 'Administrator', bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', icon: null },
+  analyst: { label: 'Fraud Analyst', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', icon: null },
 };
 
 export const StatusBadge = ({ status, showIcon = true, className = '', size = 'md' }) => {
@@ -35,9 +35,9 @@ export const StatusBadge = ({ status, showIcon = true, className = '', size = 'm
   const key = String(status).toLowerCase();
   const cfg = statusConfigs[key] || {
     label: key.replace(/_/g, ' '),
-    bg: 'bg-slate-800/80',
-    text: 'text-slate-400',
-    border: 'border-slate-700',
+    bg: 'bg-slate-100/80',
+    text: 'text-slate-600',
+    border: 'border-slate-200',
     icon: null,
   };
 

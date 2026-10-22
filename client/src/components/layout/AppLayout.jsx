@@ -47,10 +47,10 @@ export const AppLayout = () => {
   };
 
   const serviceColor = (state) => ({
-    Healthy: 'text-emerald-400',
-    Degraded: 'text-amber-400',
-    Unavailable: 'text-rose-400',
-    Unknown: 'text-slate-400',
+    Healthy: 'text-emerald-700',
+    Degraded: 'text-amber-700',
+    Unavailable: 'text-rose-700',
+    Unknown: 'text-slate-500',
   }[state]);
 
   const pageName = location.pathname === '/'
@@ -76,7 +76,7 @@ export const AppLayout = () => {
     : 'Settings';
 
   return (
-    <div className="flex min-h-screen bg-[#0a0f18] text-slate-100">
+    <div className="flex min-h-screen bg-[#F7F9FC] text-[#111827]">
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -84,11 +84,11 @@ export const AppLayout = () => {
       />
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 bg-slate-950/95 border-b border-slate-800 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30">
+        <header className="h-14 bg-white/95 border-b border-slate-200 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-sm">
           <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400"
+              className="lg:hidden p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100"
               aria-label="Toggle navigation"
             >
               <Menu size={20} />
@@ -96,17 +96,17 @@ export const AppLayout = () => {
             <button
               type="button"
               onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
-              className="hidden lg:inline-flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400"
+              className="hidden lg:inline-flex p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100"
               aria-label={sidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
               title={sidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
             >
               {sidebarCollapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
             </button>
             <Link to="/" className="flex items-center gap-2 lg:hidden">
-              <Shield className="text-cyan-400" size={18} />
-              <span className="font-semibold text-sm text-white">SecurePay</span>
+              <Shield className="text-blue-600" size={18} />
+              <span className="font-semibold text-sm text-slate-900">SecurePay</span>
             </Link>
-            <p className="hidden lg:block text-sm font-semibold text-slate-200">{pageName}</p>
+            <p className="hidden lg:block text-sm font-semibold text-slate-800">{pageName}</p>
           </div>
           <div className="flex items-center gap-2 sm:gap-4 text-[11px] sm:text-xs" aria-label="Service health">
             {[
@@ -132,18 +132,18 @@ export const AppLayout = () => {
         position="top-right"
         toastOptions={{
           style: {
-            background: '#0f172a',
-            color: '#f8fafc',
-            border: '1px solid #334155',
+            background: '#ffffff',
+            color: '#172033',
+            border: '1px solid #e2e8f0',
             borderRadius: '12px',
             fontSize: '13px',
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
+            boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.12)',
           },
           success: {
-            iconTheme: { primary: '#10b981', secondary: '#0f172a' },
+            iconTheme: { primary: '#16a34a', secondary: '#ffffff' },
           },
           error: {
-            iconTheme: { primary: '#ef4444', secondary: '#0f172a' },
+            iconTheme: { primary: '#dc2626', secondary: '#ffffff' },
           },
           duration: 3500,
         }}

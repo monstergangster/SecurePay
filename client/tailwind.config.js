@@ -4,10 +4,9 @@ export default {
   theme: {
     extend: {
       colors: {
-        navy: {
-          950: '#0a0f1a',
-          900: '#111827',
-          850: '#1a2234',
+        slate: {
+          200: '#E5EAF2',
+          300: '#D5DCE8',
         },
       },
     },

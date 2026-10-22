@@ -1,26 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-} from 'recharts';
-import {
   AlertTriangle,
   ArrowLeftRight,
-  ShieldAlert,
   FolderOpen,
   RefreshCw,
   ShieldCheck,
   IndianRupee,
   Radio,
   ExternalLink,
-  Ban,
-  Eye,
 } from 'lucide-react';
 import api from '../services/api';
 import { RiskBadge } from '../components/ui/RiskBadge';
@@ -32,26 +20,6 @@ import { Skeleton, EmptyState } from '../components/ui/EmptyState';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { formatINR } from '../utils/currency';
-
-const CustomChartTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-slate-900/95 border border-slate-700/80 rounded-xl p-3 text-xs shadow-xl font-mono">
-        <p className="text-slate-400 mb-1.5 font-semibold">{label}</p>
-        {payload.map((p) => (
-          <div key={p.name} className="flex items-center justify-between gap-4 py-0.5">
-            <span style={{ color: p.color }} className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
-              {p.name}:
-            </span>
-            <span className="text-white font-bold">{p.value?.toLocaleString()}</span>
-          </div>
-        ))}
-      </div>
-    );
-  }
-  return null;
-};
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
@@ -147,16 +115,8 @@ export default function Dashboard() {
   const flaggedRatio = totalTx > 0 && flaggedCount !== undefined
     ? `${((flaggedCount / totalTx) * 100).toFixed(1)}%`
     : null;
-  const volumeData = stats?.volumeData || [];
   const riskDist = stats?.riskDistribution || [];
   const activeThreats = stats?.activeThreats || [];
-
-  // Compute total flagged in 14 days for trend statement
-  const totalPeriodFlagged = volumeData.reduce((acc, d) => acc + (d.flagged || 0), 0);
-  const totalPeriodCount = volumeData.reduce((acc, d) => acc + (d.count || 0), 0);
-  const periodAnomalyRatio = totalPeriodCount > 0
-    ? `${((totalPeriodFlagged / totalPeriodCount) * 100).toFixed(1)}%`
-    : null;
 
   return (
     <div className="space-y-6">
@@ -164,9 +124,9 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-semibold text-white tracking-tight">Command Center</h1>
+            <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Command Center</h1>
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-600">
             A clear view of service health, suspicious payments, and investigations that need attention.
           </p>
         </div>
@@ -176,27 +136,27 @@ export default function Dashboard() {
           <button
             onClick={() => fetchData(false)}
             disabled={refreshing}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors disabled:opacity-50"
             title="Fetch latest API snapshot"
           >
-            <RefreshCw size={12} className={refreshing ? 'animate-spin text-cyan-400' : ''} />
+            <RefreshCw size={12} className={refreshing ? 'animate-spin text-blue-700' : ''} />
             <span className="hidden sm:inline">Refresh</span>
           </button>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-xs" aria-label="System service health">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs" aria-label="System service health">
         {[
           ['API', healthUnavailable ? 'Unavailable' : health?.services?.api === 'operational' ? 'Healthy' : 'Unknown'],
           ['Database', health?.services?.database === 'connected' ? 'Healthy' : health?.services?.database === 'disconnected' ? 'Unavailable' : 'Unknown'],
           ['ML service', health?.services?.mlService === 'connected' ? 'Healthy' : health?.services?.mlService === 'degraded' ? 'Degraded' : health?.services?.mlService === 'unavailable' ? 'Unavailable' : 'Unknown'],
         ].map(([label, state]) => (
           <span key={label}>
-            <span className="text-slate-400">{label}: </span>
+            <span className="text-slate-600">{label}: </span>
             <span className={
-              state === 'Healthy' ? 'text-emerald-300' :
-              state === 'Degraded' ? 'text-amber-300' :
-              state === 'Unavailable' ? 'text-rose-300' : 'text-slate-400'
+              state === 'Healthy' ? 'text-emerald-700' :
+              state === 'Degraded' ? 'text-amber-700' :
+              state === 'Unavailable' ? 'text-rose-700' : 'text-slate-600'
             }>{state}</span>
           </span>
         ))}
@@ -204,7 +164,7 @@ export default function Dashboard() {
       </div>
 
       {dashboardError && (
-        <div role="alert" className="rounded-xl border border-rose-900/60 bg-rose-950/30 px-4 py-3 text-sm text-rose-200">
+        <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {dashboardError} Use Refresh to try again.
         </div>
       )}
@@ -230,7 +190,7 @@ export default function Dashboard() {
               variant="warning"
             />
             <MetricCard
-              title="Money at Risk"
+              title="Amount at Risk"
               value={summary.moneyAtRisk === undefined ? '—' : formatINR(summary.moneyAtRisk, summary.currency || 'INR')}
               subtext={summary.currencyMigrationRequired ? 'Mixed currencies require review' : 'Exposure from flagged payments'}
               icon={IndianRupee}
@@ -251,17 +211,17 @@ export default function Dashboard() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
-            <h2 className="text-base font-bold text-slate-100 uppercase tracking-wide font-mono">
-              ACTIVE THREATS & HIGH-PRIORITY ALERTS
+            <div className="w-2.5 h-2.5 rounded-full bg-red-600" />
+            <h2 className="text-base font-bold text-slate-900 uppercase tracking-wide font-mono">
+              Critical alerts requiring attention
             </h2>
-            <span className="text-xs font-mono text-red-400 bg-red-950/60 px-2 py-0.5 rounded border border-red-800">
+            <span className="text-xs font-mono text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-200">
               {dashboardError ? '—' : activeThreats.length} Requiring Attention
             </span>
           </div>
           <Link
             to="/alerts?severity=critical"
-            className="text-xs text-cyan-400 hover:text-cyan-300 font-medium flex items-center gap-1"
+            className="text-xs text-blue-700 hover:text-blue-700 font-medium flex items-center gap-1"
           >
             Open Threat Center <ExternalLink size={12} />
           </Link>
@@ -274,7 +234,7 @@ export default function Dashboard() {
             ))}
           </div>
         ) : dashboardError ? (
-          <p role="alert" className="rounded-xl border border-rose-900/60 bg-rose-950/30 px-4 py-6 text-center text-sm text-rose-200">
+          <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-6 text-center text-sm text-rose-700">
             Priority alerts could not be loaded. Use Refresh to try again.
           </p>
         ) : activeThreats.length === 0 ? (
@@ -286,7 +246,7 @@ export default function Dashboard() {
               action={
                 <Link
                   to="/alerts"
-                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
                 >
                   View Historical Alerts
                 </Link>
@@ -307,94 +267,14 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* 5. Charts Row: Fraud Detection Trend & Risk Distribution (Sections 13 & 14) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Fraud Detection Trend Chart */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <div>
-              <CardTitle>FRAUD DETECTION TREND (14-DAY SLIDING WINDOW)</CardTitle>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Daily transaction velocity plotted against flagged heuristic deviations
-              </p>
-            </div>
-            <div className="flex items-center gap-3 text-xs font-mono">
-              <span className="flex items-center gap-1.5 text-cyan-400">
-                <span className="w-2.5 h-2.5 rounded-sm bg-cyan-400" /> Total Volume
-              </span>
-              <span className="flex items-center gap-1.5 text-amber-400">
-                <span className="w-2.5 h-2.5 rounded-sm bg-amber-400" /> Flagged Anomalies
-              </span>
-            </div>
-          </CardHeader>
-
-          {loading ? (
-            <Skeleton className="h-48" />
-          ) : volumeData.length === 0 ? (
-            <p className="text-xs text-slate-500 text-center py-12">
-              No historical trend data recorded yet.
-            </p>
-          ) : (
-            <>
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={volumeData}>
-                  <defs>
-                    <linearGradient id="volGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.0} />
-                    </linearGradient>
-                    <linearGradient id="flagGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                  <XAxis
-                    dataKey="_id"
-                    tick={{ fill: '#64748b', fontSize: 10, fontFamily: 'monospace' }}
-                    tickFormatter={(v) => v?.slice(5)}
-                  />
-                  <YAxis tick={{ fill: '#64748b', fontSize: 10, fontFamily: 'monospace' }} />
-                  <Tooltip content={<CustomChartTooltip />} />
-                  <Area
-                    type="monotone"
-                    dataKey="count"
-                    stroke="#06b6d4"
-                    strokeWidth={2}
-                    fillOpacity={1}
-                    fill="url(#volGrad)"
-                    name="Total Transactions"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="flagged"
-                    stroke="#f59e0b"
-                    strokeWidth={2}
-                    fillOpacity={1}
-                    fill="url(#flagGrad)"
-                    name="Flagged / Suspicious"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-              <div className="mt-3 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-                <span className="font-mono">
-                  14-Day Cumulative: <strong className="text-slate-200">{totalPeriodCount}</strong> txns,{' '}
-                  <strong className="text-amber-400">{totalPeriodFlagged}</strong> flagged
-                </span>
-                <span className="font-mono text-cyan-400">
-                  Anomaly Rate: <strong>                  {periodAnomalyRatio ?? '—'}</strong>
-                </span>
-              </div>
-            </>
-          )}
-        </Card>
-
+      {/* Risk distribution */}
+      <div className="grid grid-cols-1 gap-5">
         {/* Current Threat Distribution */}
         <Card>
           <CardHeader>
             <div>
-              <CardTitle>CURRENT THREAT DISTRIBUTION</CardTitle>
-              <p className="text-xs text-slate-400 mt-0.5">Transactions classified by risk score severity</p>
+              <CardTitle>Risk distribution</CardTitle>
+              <p className="text-xs text-slate-600 mt-0.5">Transactions classified by risk score severity</p>
             </div>
           </CardHeader>
 
@@ -403,25 +283,25 @@ export default function Dashboard() {
           ) : (
             <div className="space-y-4 pt-1">
               {[
-                { level: 'critical', label: 'Critical Risk (80-100)', color: '#ef4444', bar: 'bg-rose-500' },
-                { level: 'high', label: 'High Risk (55-79)', color: '#f97316', bar: 'bg-orange-500' },
-                { level: 'medium', label: 'Medium Risk (25-54)', color: '#f59e0b', bar: 'bg-amber-500' },
-                { level: 'low', label: 'Low Risk (0-24)', color: '#10b981', bar: 'bg-emerald-500' },
+                { level: 'critical', label: 'Critical risk (80-100)', color: '#dc2626', bar: 'bg-red-600' },
+                { level: 'high', label: 'High risk (55-79)', color: '#ea580c', bar: 'bg-orange-600' },
+                { level: 'medium', label: 'Medium risk (25-54)', color: '#d97706', bar: 'bg-amber-600' },
+                { level: 'low', label: 'Low risk (0-24)', color: '#16a34a', bar: 'bg-emerald-600' },
               ].map((item) => {
                 const count = riskDist.find((r) => r._id === item.level)?.count || 0;
                 const pct = totalTx > 0 ? ((count / totalTx) * 100).toFixed(1) : 0;
                 return (
                   <div key={item.level} className="space-y-1.5">
                     <div className="flex justify-between items-center text-xs">
-                      <span className="font-medium text-slate-300 flex items-center gap-1.5">
+                      <span className="font-medium text-slate-700 flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
                         {item.label}
                       </span>
-                      <span className="font-mono font-bold text-slate-200">
+                      <span className="font-mono font-bold text-slate-800">
                         {count} <span className="text-slate-500 font-normal">({pct}%)</span>
                       </span>
                     </div>
-                    <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${item.bar}`}
                         style={{ width: `${pct}%` }}
@@ -431,7 +311,7 @@ export default function Dashboard() {
                 );
               })}
 
-              <div className="pt-3 border-t border-slate-800 text-[11px] text-slate-500 text-center">
+              <div className="pt-3 border-t border-slate-200 text-[11px] text-slate-500 text-center">
                 Transactions by risk category. Total: {totalTx?.toLocaleString() ?? '—'}
               </div>
             </div>
@@ -439,17 +319,59 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* 6. Live Fraud Activity Stream & High-Risk Transactions (Section 11) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <Card>
+        <CardHeader>
+          <div>
+            <CardTitle>Recommended next steps</CardTitle>
+            <p className="mt-0.5 text-xs text-slate-600">Priorities based on the latest dashboard records.</p>
+          </div>
+        </CardHeader>
+        {dashboardError ? (
+          <p className="text-sm text-slate-600">Recommendations are unavailable until dashboard data loads.</p>
+        ) : (
+          <div className="flex flex-wrap gap-3">
+            {(summary.criticalAlerts > 0 || summary.openAlerts > 0) && (
+              <Link
+                to="/alerts"
+                className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100"
+              >
+                Review {summary.criticalAlerts || summary.openAlerts} open alert{(summary.criticalAlerts || summary.openAlerts) === 1 ? '' : 's'}
+              </Link>
+            )}
+            {flaggedCount > 0 && (
+              <Link
+                to="/transactions"
+                className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+              >
+                Review {flaggedCount.toLocaleString()} suspicious transaction{flaggedCount === 1 ? '' : 's'}
+              </Link>
+            )}
+            {summary.openCases > 0 && (
+              <Link
+                to="/cases"
+                className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+              >
+                Continue {summary.openCases} open investigation{summary.openCases === 1 ? '' : 's'}
+              </Link>
+            )}
+            {!(summary.criticalAlerts > 0 || summary.openAlerts > 0 || flaggedCount > 0 || summary.openCases > 0) && (
+              <p className="text-sm text-slate-600">No immediate actions are indicated by the available dashboard data.</p>
+            )}
+          </div>
+        )}
+      </Card>
+
+      {/* Recent transactions */}
+      <div className="grid grid-cols-1 gap-5">
         {/* Live Ingestion Feed */}
         <Card padding={false}>
-          <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+          <div className="p-4 border-b border-slate-200 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Radio size={14} className="text-emerald-400 animate-pulse" />
-              <h3 className="text-sm font-semibold text-slate-200">LIVE TRANSACTION STREAM</h3>
+              <Radio size={14} className="text-emerald-700" />
+              <h3 className="text-sm font-semibold text-slate-800">Recent transactions</h3>
             </div>
-            <Link to="/transactions" className="text-xs text-cyan-400 hover:text-cyan-300 font-medium">
-              View All Monitor
+            <Link to="/transactions" className="text-xs text-blue-700 hover:text-blue-700 font-medium">
+              View all
             </Link>
           </div>
 
@@ -458,24 +380,24 @@ export default function Dashboard() {
               <Skeleton className="h-44" />
             </div>
           ) : transactionError ? (
-            <p role="alert" className="px-4 py-8 text-sm text-rose-300">{transactionError}</p>
+            <p role="alert" className="px-4 py-8 text-sm text-rose-700">{transactionError}</p>
           ) : liveStream.length === 0 ? (
             <p className="text-xs text-slate-500 text-center py-10">No live transactions available.</p>
           ) : (
-            <div className="divide-y divide-slate-800/60 max-h-[380px] overflow-y-auto">
+            <div className="divide-y divide-slate-200 max-h-[380px] overflow-y-auto">
               {liveStream.map((tx) => (
                 <Link
                   key={tx._id}
                   to={`/transactions/${tx._id}`}
-                  className="flex items-center justify-between px-4 py-3 hover:bg-slate-800/40 transition-colors"
+                  className="flex items-center justify-between px-4 py-3 hover:bg-slate-100/40 transition-colors"
                 >
                   <div className="space-y-0.5 min-w-0 mr-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono text-cyan-400 font-semibold">{tx.transactionId}</span>
+                      <span className="text-xs font-mono text-blue-700 font-semibold">{tx.transactionId}</span>
                       <StatusBadge status={tx.status} size="sm" showIcon={false} />
                     </div>
-                    <p className="text-[11px] text-slate-400 truncate">
-                      {tx.customerId} · <strong className="text-slate-200">{formatINR(tx.amount, tx.currency || '')}</strong> · via{' '}
+                    <p className="text-[11px] text-slate-600 truncate">
+                      {tx.customerId} · <strong className="text-slate-800">{formatINR(tx.amount, tx.currency || '')}</strong> · via{' '}
                       <span className="capitalize">{tx.channel?.replace(/_/g, ' ') || 'card'}</span>
                     </p>
                   </div>
@@ -487,77 +409,6 @@ export default function Dashboard() {
                     </span>
                   </div>
                 </Link>
-              ))}
-            </div>
-          )}
-        </Card>
-
-        {/* Recent High-Risk Transactions with Quick Intercept */}
-        <Card padding={false}>
-          <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ShieldAlert size={14} className="text-rose-400" />
-              <h3 className="text-sm font-semibold text-slate-200">RECENT HIGH-RISK DETECTIONS</h3>
-            </div>
-            <Link to="/transactions?riskLevel=high" className="text-xs text-cyan-400 hover:text-cyan-300 font-medium">
-              Filter High Risk
-            </Link>
-          </div>
-
-          {loading ? (
-            <div className="p-4">
-              <Skeleton className="h-44" />
-            </div>
-          ) : dashboardError ? (
-            <p role="alert" className="px-4 py-8 text-sm text-rose-300">{dashboardError}</p>
-          ) : !stats?.recentHighRiskTx?.length ? (
-            <p className="text-xs text-slate-500 text-center py-10">No recent high-risk transactions detected.</p>
-          ) : (
-            <div className="divide-y divide-slate-800/60 max-h-[380px] overflow-y-auto">
-              {stats.recentHighRiskTx.map((tx) => (
-                <div
-                  key={tx._id}
-                  className="flex items-center justify-between px-4 py-3 hover:bg-slate-800/40 transition-colors"
-                >
-                  <div className="space-y-0.5 min-w-0 mr-3">
-                    <div className="flex items-center gap-2">
-                      <Link
-                        to={`/transactions/${tx._id}`}
-                        className="text-xs font-mono text-cyan-400 hover:underline font-bold"
-                      >
-                        {tx.transactionId}
-                      </Link>
-                      <RiskBadge level={tx.riskLevel} score={tx.riskScore} size="sm" />
-                    </div>
-                    <p className="text-[11px] text-slate-400 truncate">
-                      {tx.customerId} · <span className="text-slate-100 font-semibold">{formatINR(tx.amount, tx.currency || '')}</span>
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {tx.status !== 'blocked' ? (
-                      <button
-                        onClick={() => handleBlockTransaction(tx._id)}
-                        disabled={blockingId === tx._id}
-                        className="px-2 py-1 text-[11px] font-medium rounded-md text-rose-400 bg-rose-950/60 border border-rose-800/60 hover:bg-rose-900/60 transition-colors flex items-center gap-1 disabled:opacity-50"
-                      >
-                        <Ban size={10} /> Block
-                      </button>
-                    ) : (
-                      <span className="text-[10px] font-mono text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded border border-rose-800/60 font-semibold">
-                        BLOCKED
-                      </span>
-                    )}
-
-                    <Link
-                      to={`/transactions/${tx._id}`}
-                      className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800"
-                      title="Inspect Transaction"
-                    >
-                      <Eye size={14} />
-                    </Link>
-                  </div>
-                </div>
               ))}
             </div>
           )}

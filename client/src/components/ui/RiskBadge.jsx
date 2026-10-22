@@ -1,27 +1,27 @@
 import React from 'react';
 
 export const getRiskInfo = (val) => {
-  if (val === null || val === undefined) return { level: 'unassessed', label: 'Unassessed', bg: 'bg-slate-800', text: 'text-slate-400', border: 'border-slate-700', dot: 'bg-slate-400' };
+  if (val === null || val === undefined) return { level: 'unassessed', label: 'Unassessed', bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-200', dot: 'bg-slate-400' };
   
   if (typeof val === 'number') {
-    if (val >= 80) return { level: 'critical', label: 'Critical', bg: 'bg-red-950/60', text: 'text-red-400', border: 'border-red-800/60', dot: 'bg-red-500' };
-    if (val >= 55) return { level: 'high', label: 'High', bg: 'bg-orange-950/60', text: 'text-orange-400', border: 'border-orange-800/60', dot: 'bg-orange-500' };
-    if (val >= 25) return { level: 'medium', label: 'Medium', bg: 'bg-amber-950/60', text: 'text-amber-400', border: 'border-amber-800/60', dot: 'bg-amber-500' };
-    return { level: 'low', label: 'Low', bg: 'bg-emerald-950/60', text: 'text-emerald-400', border: 'border-emerald-800/60', dot: 'bg-emerald-500' };
+    if (val >= 80) return { level: 'critical', label: 'Critical', bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', dot: 'bg-red-500' };
+    if (val >= 55) return { level: 'high', label: 'High', bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', dot: 'bg-orange-500' };
+    if (val >= 25) return { level: 'medium', label: 'Medium', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', dot: 'bg-amber-500' };
+    return { level: 'low', label: 'Low', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', dot: 'bg-blue-500' };
   }
 
   const norm = String(val).toLowerCase();
   switch (norm) {
     case 'critical':
-      return { level: 'critical', label: 'Critical', bg: 'bg-red-950/60', text: 'text-red-400', border: 'border-red-800/60', dot: 'bg-red-500' };
+      return { level: 'critical', label: 'Critical', bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', dot: 'bg-red-500' };
     case 'high':
-      return { level: 'high', label: 'High', bg: 'bg-orange-950/60', text: 'text-orange-400', border: 'border-orange-800/60', dot: 'bg-orange-500' };
+      return { level: 'high', label: 'High', bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', dot: 'bg-orange-500' };
     case 'medium':
-      return { level: 'medium', label: 'Medium', bg: 'bg-amber-950/60', text: 'text-amber-400', border: 'border-amber-800/60', dot: 'bg-amber-500' };
+      return { level: 'medium', label: 'Medium', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', dot: 'bg-amber-500' };
     case 'low':
-      return { level: 'low', label: 'Low', bg: 'bg-emerald-950/60', text: 'text-emerald-400', border: 'border-emerald-800/60', dot: 'bg-emerald-500' };
+      return { level: 'low', label: 'Low', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', dot: 'bg-blue-500' };
     default:
-      return { level: 'unassessed', label: norm || 'Unassessed', bg: 'bg-slate-800/80', text: 'text-slate-400', border: 'border-slate-700', dot: 'bg-slate-500' };
+      return { level: 'unassessed', label: norm || 'Unassessed', bg: 'bg-slate-100/80', text: 'text-slate-600', border: 'border-slate-200', dot: 'bg-slate-500' };
   }
 };
 

@@ -20,7 +20,7 @@ export const DetectionTimeline = ({
       title: 'Transaction Initiated',
       description: `Inbound ${formatINR(transaction.amount, transaction.currency || '')} transaction via ${transaction.channel?.replace(/_/g, ' ') || 'standard'} channel by ${transaction.customerId}.`,
       icon: CheckCircle2,
-      color: 'text-emerald-400 bg-emerald-950/60 border-emerald-800',
+      color: 'text-emerald-700 bg-emerald-50 border-emerald-200',
     });
   }
 
@@ -33,7 +33,7 @@ export const DetectionTimeline = ({
       title: 'Hardware & Geo Verification',
       description: `Device hardware fingerprint ${transaction.deviceMetadata.deviceId || 'DEV-STANDARD'} evaluated. IP: ${transaction.deviceMetadata.ipAddress || '127.0.0.1'}${locStr ? ` (${locStr})` : ''}.`,
       icon: Fingerprint,
-      color: 'text-cyan-400 bg-cyan-950/60 border-cyan-800',
+      color: 'text-blue-700 bg-blue-50 border-blue-200',
     });
   }
 
@@ -46,7 +46,7 @@ export const DetectionTimeline = ({
       title: 'Risk Engine Evaluation',
       description: `Calculated risk score: ${transaction.riskScore ?? 'N/A'}/100 (${(transaction.riskLevel || 'unassessed').toUpperCase()}). Triggered ${triggeredCount} rule(s) and heuristic thresholds.`,
       icon: isHigh ? AlertTriangle : CheckCircle2,
-      color: isHigh ? 'text-amber-400 bg-amber-950/60 border-amber-800' : 'text-emerald-400 bg-emerald-950/60 border-emerald-800',
+      color: isHigh ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-emerald-700 bg-emerald-50 border-emerald-200',
     });
   }
 
@@ -58,7 +58,7 @@ export const DetectionTimeline = ({
       title: 'ML Isolation Forest Scoring',
       description: `Statistical inference returned ML anomaly score: ${transaction.mlScore}/100 (${transaction.mlDecision?.toUpperCase()}). Combined into hybrid score policy.`,
       icon: Cpu,
-      color: isAnom ? 'text-purple-400 bg-purple-950/60 border-purple-800' : 'text-cyan-400 bg-cyan-950/60 border-cyan-800',
+      color: isAnom ? 'text-purple-700 bg-purple-50 border-purple-200' : 'text-blue-700 bg-blue-50 border-blue-200',
     });
   }
 
@@ -70,7 +70,7 @@ export const DetectionTimeline = ({
         title: `Security Alert Generated (${alt.severity?.toUpperCase()})`,
         description: `${alt.title}. Alert ID: ${alt.alertId}. Status: ${alt.status?.replace(/_/g, ' ')}.`,
         icon: AlertTriangle,
-        color: alt.severity === 'critical' ? 'text-red-400 bg-red-950/60 border-red-800' : 'text-amber-400 bg-amber-950/60 border-amber-800',
+        color: alt.severity === 'critical' ? 'text-red-700 bg-red-50 border-red-200' : 'text-amber-700 bg-amber-50 border-amber-200',
       });
     });
   }
@@ -87,17 +87,17 @@ export const DetectionTimeline = ({
       ? 'Payment cleared for processing within acceptable operational risk parameters.'
       : `Transaction held for operational review (${transaction.reviewStatus || 'pending_review'}).`,
     icon: isBlocked ? ShieldX : CheckCircle2,
-    color: isBlocked ? 'text-red-400 bg-red-950/80 border-red-800' : isApproved ? 'text-emerald-400 bg-emerald-950/80 border-emerald-800' : 'text-amber-400 bg-amber-950/80 border-amber-800',
+    color: isBlocked ? 'text-red-700 bg-red-50 border-red-200' : isApproved ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-amber-700 bg-amber-50 border-amber-200',
   });
 
   return (
     <div className={`space-y-4 ${className}`}>
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-slate-200">Chronological Detection Timeline</h4>
-        <span className="text-[11px] font-mono text-slate-400">{events.length} lifecycle events</span>
+        <h4 className="text-sm font-semibold text-slate-800">Chronological Detection Timeline</h4>
+        <span className="text-[11px] font-mono text-slate-600">{events.length} lifecycle events</span>
       </div>
 
-      <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-800">
+      <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-100">
         {events.map((evt, idx) => {
           const Icon = evt.icon;
           return (
@@ -109,14 +109,14 @@ export const DetectionTimeline = ({
                 <Icon size={11} />
               </div>
 
-              <div className="bg-slate-900/70 border border-slate-800/80 p-3 rounded-xl hover:border-slate-700 transition-colors">
+              <div className="bg-white/70 border border-slate-200/80 p-3 rounded-xl hover:border-slate-200 transition-colors">
                 <div className="flex items-center justify-between gap-2 mb-1">
-                  <h5 className="text-xs font-semibold text-slate-200">{evt.title}</h5>
+                  <h5 className="text-xs font-semibold text-slate-800">{evt.title}</h5>
                   <span className="text-[10px] font-mono text-slate-500 whitespace-nowrap">
                     {evt.time ? format(evt.time, 'HH:mm:ss.SSS') : '—'}
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 leading-relaxed">{evt.description}</p>
+                <p className="text-xs text-slate-600 leading-relaxed">{evt.description}</p>
               </div>
             </div>
           );

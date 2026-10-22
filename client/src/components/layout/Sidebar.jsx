@@ -79,33 +79,33 @@ export const Sidebar = ({ isOpen, onClose, collapsed = false }) => {
       {isOpen && (
         <div
           onClick={onClose}
-          className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-white/40 backdrop-blur-sm z-40 lg:hidden"
         />
       )}
 
       <aside
-        className={`fixed top-0 bottom-0 left-0 w-64 ${collapsed ? 'lg:w-[4.5rem]' : 'lg:w-64'} bg-slate-950 border-r border-slate-800 flex flex-col z-50 transition-[width,transform] duration-200 ease-out lg:static lg:translate-x-0 ${
+        className={`fixed top-0 bottom-0 left-0 w-64 ${collapsed ? 'lg:w-[4.5rem]' : 'lg:w-64'} bg-white border-r border-slate-200 flex flex-col z-50 transition-[width,transform] duration-200 ease-out lg:static lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Brand Header */}
-        <div className={`h-16 flex items-center ${collapsed ? 'justify-center px-2' : 'justify-between px-5'} border-b border-slate-800`}>
+        <div className={`h-16 flex items-center ${collapsed ? 'justify-center px-2' : 'justify-between px-5'} border-b border-slate-200`}>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-cyan-700 flex items-center justify-center">
-              <Shield className="text-white" size={20} />
+            <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center shadow-sm">
+              <Shield className="text-slate-900" size={20} />
             </div>
             {!collapsed && <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-sm font-bold text-white tracking-wide">SecurePay</span>
-                <span className="text-[10px] font-bold px-1.5 py-0.2 bg-cyan-950 text-cyan-400 border border-cyan-800/60 rounded">SOC</span>
+                <span className="text-sm font-bold text-slate-900 tracking-wide">SecurePay</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.2 bg-blue-50 text-blue-700 border border-blue-200 rounded">SOC</span>
               </div>
-              <p className="text-[10px] text-slate-400">Fraud monitoring</p>
+              <p className="text-[10px] text-slate-500">Fraud monitoring</p>
             </div>}
           </div>
 
           <button
             onClick={onClose}
-            className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+            className="lg:hidden p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100"
           >
             <X size={18} />
           </button>
@@ -127,10 +127,10 @@ export const Sidebar = ({ isOpen, onClose, collapsed = false }) => {
                   aria-label={item.label}
                   onClick={() => onClose && onClose()}
                   className={({ isActive }) =>
-                    `flex items-center ${collapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2 rounded-lg text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400 ${
+                    `flex items-center ${collapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2 rounded-lg text-sm font-medium transition-colors ${
                       isActive
-                        ? 'bg-slate-800 text-cyan-300'
-                        : 'text-slate-400 hover:text-slate-100 hover:bg-slate-900'
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                     }`
                   }
                 >
@@ -143,19 +143,19 @@ export const Sidebar = ({ isOpen, onClose, collapsed = false }) => {
         </nav>
 
         {/* User Profile & Session Controls */}
-        <div className={`border-t border-slate-800 p-3 ${collapsed ? 'flex flex-col items-center' : ''}`}>
+        <div className={`border-t border-slate-200 p-3 ${collapsed ? 'flex flex-col items-center' : ''}`}>
           <NavLink
             to="/settings"
             onClick={() => onClose && onClose()}
             title={collapsed ? `${user?.name || 'User'} — ${user?.role || 'role'}` : undefined}
-            className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'} p-2 rounded-lg hover:bg-slate-900 transition-colors mb-1.5`}
+            className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'} p-2 rounded-lg hover:bg-slate-100 transition-colors mb-1.5`}
           >
-            <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-cyan-300 text-xs font-bold flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-700 text-xs font-bold flex-shrink-0">
               {user?.name?.[0]?.toUpperCase() || 'U'}
             </div>
             {!collapsed && <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-white truncate">{user?.name}</p>
-              <p className="text-[11px] font-mono text-slate-400 capitalize">{user?.role} Role</p>
+              <p className="text-xs font-semibold text-slate-900 truncate">{user?.name}</p>
+              <p className="text-[11px] font-mono text-slate-500 capitalize">{user?.role} Role</p>
             </div>}
           </NavLink>
 
@@ -163,7 +163,7 @@ export const Sidebar = ({ isOpen, onClose, collapsed = false }) => {
             onClick={handleLogout}
             title={collapsed ? 'Sign out' : undefined}
             aria-label="Sign out"
-            className={`flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-slate-400 hover:text-rose-300 hover:bg-rose-950/30 rounded-lg transition-colors ${collapsed ? 'w-10' : 'w-full'}`}
+            className={`flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-slate-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors ${collapsed ? 'w-10' : 'w-full'}`}
           >
             <LogOut size={15} /> {!collapsed && 'Sign out'}
           </button>

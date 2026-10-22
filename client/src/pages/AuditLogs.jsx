@@ -49,13 +49,13 @@ export default function AuditLogs() {
             type="button"
             onClick={fetchLogs}
             aria-label="Refresh audit logs"
-            className="p-2 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white rounded-xl transition-colors"
+            className="p-2 bg-white border border-slate-200 text-slate-600 hover:text-slate-900 rounded-xl transition-colors"
           >
-            <RefreshCw size={13} className={loading ? 'animate-spin text-cyan-400' : ''} />
+            <RefreshCw size={13} className={loading ? 'animate-spin text-blue-700' : ''} />
           </button>
         )}
       />
-      {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-rose-700">{error}</p>}
 
       {/* 2. Action Filter */}
       <div className="flex gap-2">
@@ -83,11 +83,11 @@ export default function AuditLogs() {
       </div>
 
       {/* 3. Audit Table */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-white/90 border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[750px]">
             <thead>
-              <tr className="border-b border-slate-800 text-left text-[11px] font-mono text-slate-400 uppercase tracking-wider">
+              <tr className="border-b border-slate-200 text-left text-[11px] font-mono text-slate-600 uppercase tracking-wider">
                 <th className="px-5 py-3.5">Timestamp (UTC)</th>
                 <th className="px-5 py-3.5">Actor Identity</th>
                 <th className="px-5 py-3.5">Action Code</th>
@@ -96,7 +96,7 @@ export default function AuditLogs() {
                 <th className="px-5 py-3.5">Network IP</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 font-mono text-xs">
+            <tbody className="divide-y divide-slate-200 font-mono text-xs">
               {loading ? (
                 <tr>
                   <td colSpan={6}>
@@ -106,8 +106,8 @@ export default function AuditLogs() {
               ) : error ? (
                 <tr>
                   <td colSpan={6} className="p-6 text-center">
-                    <p className="text-sm text-rose-300">{error}</p>
-                    <button type="button" onClick={fetchLogs} className="mt-3 text-xs font-semibold text-cyan-300 hover:text-cyan-200">
+                    <p className="text-sm text-rose-700">{error}</p>
+                    <button type="button" onClick={fetchLogs} className="mt-3 text-xs font-semibold text-blue-700 hover:text-blue-700">
                       Retry
                     </button>
                   </td>
@@ -124,29 +124,29 @@ export default function AuditLogs() {
                 </tr>
               ) : (
                 logs.map((log) => (
-                  <tr key={log._id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="px-5 py-3.5 text-slate-400 whitespace-nowrap text-[11px]">
+                  <tr key={log._id} className="hover:bg-slate-100/40 transition-colors">
+                    <td className="px-5 py-3.5 text-slate-600 whitespace-nowrap text-[11px]">
                       {log.createdAt ? format(new Date(log.createdAt), 'yyyy-MM-dd HH:mm:ss') : '—'}
                     </td>
 
-                    <td className="px-5 py-3.5 text-slate-200">
+                    <td className="px-5 py-3.5 text-slate-800">
                       <span>{log.actor?.name || 'System Actor'}</span>
                       {log.actorRole && (
-                        <span className="ml-1.5 text-[10px] text-cyan-400 bg-cyan-950 px-1.5 py-0.2 rounded border border-cyan-800">
+                        <span className="ml-1.5 text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200">
                           {log.actorRole}
                         </span>
                       )}
                     </td>
 
-                    <td className="px-5 py-3.5 font-bold text-cyan-300">
+                    <td className="px-5 py-3.5 font-bold text-blue-700">
                       {log.action}
                     </td>
 
-                    <td className="px-5 py-3.5 text-slate-300">
+                    <td className="px-5 py-3.5 text-slate-700">
                       {log.entity} {log.entityId && <span className="text-slate-500 font-normal">[{log.entityId}]</span>}
                     </td>
 
-                    <td className="px-5 py-3.5 text-slate-400 max-w-xs truncate text-[11px]">
+                    <td className="px-5 py-3.5 text-slate-600 max-w-xs truncate text-[11px]">
                       {JSON.stringify(log.details || {})}
                     </td>
 

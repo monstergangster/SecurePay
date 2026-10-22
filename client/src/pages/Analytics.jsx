@@ -31,15 +31,15 @@ import { formatINR } from '../utils/currency';
 const ChartTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-slate-900/95 border border-slate-700 rounded-xl p-3 text-xs shadow-xl font-mono">
-        <p className="text-slate-400 mb-1 font-semibold">{label}</p>
+      <div className="bg-white/95 border border-slate-200 rounded-xl p-3 text-xs shadow-xl font-mono">
+        <p className="text-slate-600 mb-1 font-semibold">{label}</p>
         {payload.map((p) => (
           <div key={p.name} className="flex items-center justify-between gap-4 py-0.5">
             <span style={{ color: p.color }} className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
               {p.name}:
             </span>
-            <span className="text-white font-bold">{p.value?.toLocaleString()}</span>
+            <span className="text-slate-900 font-bold">{p.value?.toLocaleString()}</span>
           </div>
         ))}
       </div>
@@ -173,18 +173,18 @@ export default function Analytics() {
             onClick={fetchAnalytics}
             type="button"
             aria-label="Refresh analytics"
-            className="p-2 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white rounded-xl transition-colors"
+            className="p-2 bg-white border border-slate-200 text-slate-600 hover:text-slate-900 rounded-xl transition-colors"
           >
-            <RefreshCw size={13} className={loading ? 'animate-spin text-cyan-400' : ''} />
+            <RefreshCw size={13} className={loading ? 'animate-spin text-blue-700' : ''} />
           </button>
           </>
         )}
       />
 
       {loadErrors.length > 0 && (
-        <div role="alert" className="rounded-xl border border-rose-900/60 bg-rose-950/30 px-4 py-3 text-sm text-rose-200">
+        <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           <p>Some analytics are unavailable. Refresh to try again.</p>
-          <ul className="mt-1 list-disc pl-5 text-xs text-rose-300">
+          <ul className="mt-1 list-disc pl-5 text-xs text-rose-700">
             {loadErrors.map((error) => <li key={error}>{error}</li>)}
           </ul>
         </div>
@@ -234,7 +234,7 @@ export default function Analytics() {
           <CardHeader>
             <div>
               <CardTitle>DAILY AVERAGE RISK SCORE EVOLUTION</CardTitle>
-              <p className="text-xs text-slate-400 mt-0.5">Empirical average risk score computed across all transactions</p>
+              <p className="text-xs text-slate-600 mt-0.5">Empirical average risk score computed across all transactions</p>
             </div>
           </CardHeader>
           {loading ? (
@@ -244,7 +244,7 @@ export default function Analytics() {
           ) : (
             <ResponsiveContainer width="100%" height={230}>
               <LineChart data={riskData.riskTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis dataKey="_id" tick={{ fill: '#64748b', fontSize: 10, fontFamily: 'monospace' }} tickFormatter={(v) => v?.slice(5)} />
                 <YAxis tick={{ fill: '#64748b', fontSize: 10, fontFamily: 'monospace' }} domain={[0, 100]} />
                 <Tooltip content={<ChartTooltip />} />
@@ -265,7 +265,7 @@ export default function Analytics() {
           <CardHeader>
             <div>
               <CardTitle>TRANSACTION VOLUME & ANOMALIES BY CHANNEL</CardTitle>
-              <p className="text-xs text-slate-400 mt-0.5">Comparison between total traffic and flagged suspicious events</p>
+              <p className="text-xs text-slate-600 mt-0.5">Comparison between total traffic and flagged suspicious events</p>
             </div>
           </CardHeader>
           {loading ? (
@@ -275,7 +275,7 @@ export default function Analytics() {
           ) : (
             <ResponsiveContainer width="100%" height={230}>
               <BarChart data={channelRisk}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis dataKey="_id" tick={{ fill: '#64748b', fontSize: 10, fontFamily: 'monospace' }} tickFormatter={(v) => v?.replace(/_/g, ' ')} />
                 <YAxis tick={{ fill: '#64748b', fontSize: 10, fontFamily: 'monospace' }} />
                 <Tooltip content={<ChartTooltip />} />
@@ -290,11 +290,11 @@ export default function Analytics() {
       {/* 4. Top Triggered Rules & Case Outcomes */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <Card padding={false}>
-          <div className="p-4 border-b border-slate-800">
-            <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wide font-mono">
+          <div className="p-4 border-b border-slate-200">
+            <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide font-mono">
               Top Triggered Detection Rules
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">Heuristics contributing most heavily to platform risk scores</p>
+            <p className="text-xs text-slate-600 mt-0.5">Heuristics contributing most heavily to platform risk scores</p>
           </div>
           <div className="p-4 space-y-2.5">
             {loading ? (
@@ -305,13 +305,13 @@ export default function Analytics() {
               topRules.map((rule) => (
                 <div
                   key={rule.ruleId}
-                  className="flex items-center justify-between p-3 rounded-xl bg-slate-950/70 border border-slate-800/80"
+                  className="flex items-center justify-between p-3 rounded-xl bg-white/70 border border-slate-200/80"
                 >
                   <div>
-                    <p className="text-xs font-semibold text-slate-200">{rule.name}</p>
-                    <p className="text-[11px] font-mono text-cyan-400 mt-0.5">{rule.ruleId} · {rule.category}</p>
+                    <p className="text-xs font-semibold text-slate-800">{rule.name}</p>
+                    <p className="text-[11px] font-mono text-blue-700 mt-0.5">{rule.ruleId} · {rule.category}</p>
                   </div>
-                  <span className="text-xs font-mono font-bold text-amber-400 bg-amber-950 px-2.5 py-1 rounded border border-amber-800">
+                  <span className="text-xs font-mono font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded border border-amber-200">
                     {rule.triggerCount} triggers
                   </span>
                 </div>
@@ -321,11 +321,11 @@ export default function Analytics() {
         </Card>
 
         <Card padding={false}>
-          <div className="p-4 border-b border-slate-800">
-            <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wide font-mono">
+          <div className="p-4 border-b border-slate-200">
+            <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide font-mono">
               Investigation Case Outcomes
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">Ground-truth resolution filing distribution</p>
+            <p className="text-xs text-slate-600 mt-0.5">Ground-truth resolution filing distribution</p>
           </div>
           <div className="p-4 space-y-2.5">
             {loading ? (
@@ -336,12 +336,12 @@ export default function Analytics() {
               caseStats.casesByOutcome.map((item) => (
                 <div
                   key={item._id}
-                  className="flex items-center justify-between p-3 rounded-xl bg-slate-950/70 border border-slate-800/80"
+                  className="flex items-center justify-between p-3 rounded-xl bg-white/70 border border-slate-200/80"
                 >
-                  <span className="text-xs font-medium text-slate-300 capitalize">
+                  <span className="text-xs font-medium text-slate-700 capitalize">
                     {item._id?.replace(/_/g, ' ') || 'Unspecified'}
                   </span>
-                  <span className="text-xs font-mono font-bold text-cyan-400 bg-cyan-950 px-2.5 py-1 rounded border border-cyan-800">
+                  <span className="text-xs font-mono font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded border border-blue-200">
                     {item.count} cases
                   </span>
                 </div>

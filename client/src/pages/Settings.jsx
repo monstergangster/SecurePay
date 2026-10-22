@@ -47,26 +47,26 @@ export default function Settings() {
             <CardTitle>OPERATOR PROFILE</CardTitle>
           </CardHeader>
           <div className="space-y-4">
-            <div className="flex items-center gap-3.5 pb-4 border-b border-slate-800">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-900 to-blue-800 border border-cyan-700/60 flex items-center justify-center text-cyan-300 text-lg font-bold font-mono">
+            <div className="flex items-center gap-3.5 pb-4 border-b border-slate-200">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-50 to-blue-800 border border-blue-700/60 flex items-center justify-center text-blue-700 text-lg font-bold font-mono">
                 {user?.name?.[0]?.toUpperCase() || 'U'}
               </div>
               <div>
-                <p className="text-base font-bold text-white">{user?.name}</p>
-                <p className="text-xs font-mono text-cyan-400 capitalize">{user?.role} Role</p>
+                <p className="text-base font-bold text-slate-900">{user?.name}</p>
+                <p className="text-xs font-mono text-blue-700 capitalize">{user?.role} Role</p>
               </div>
             </div>
 
             <div className="space-y-3 text-xs">
               <div>
                 <p className="text-slate-500 font-mono text-[10px] uppercase">Email Identity</p>
-                <p className="text-slate-200 font-mono mt-0.5">{user?.email}</p>
+                <p className="text-slate-800 font-mono mt-0.5">{user?.email}</p>
               </div>
               <div>
                 <p className="text-slate-500 font-mono text-[10px] uppercase">Internal Identity Hash</p>
-                <p className="text-slate-400 font-mono text-[11px] mt-0.5">{user?._id || user?.id || 'N/A'}</p>
+                <p className="text-slate-600 font-mono text-[11px] mt-0.5">{user?._id || user?.id || 'N/A'}</p>
               </div>
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-400 leading-relaxed">
+              <div className="p-3 rounded-xl bg-white border border-slate-200 text-[11px] text-slate-600 leading-relaxed">
                 {user?.role === 'admin'
                   ? 'Active Scope: Full platform administration, detection engine weights, user provisioning, and audit oversight.'
                   : 'Active Scope: Real-time transaction surveillance, alert evaluation, case investigations, and report extraction.'}

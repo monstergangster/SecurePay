@@ -16,7 +16,10 @@ exports.getCases = async (req, res) => {
     if (req.query.assignedTo) filter.assignedTo = req.query.assignedTo;
     if (req.query.search) filter.title = { $regex: req.query.search, $options: 'i' };
     const [cases, total] = await Promise.all([
-      Case.find(filter).sort({ updatedAt: -1 }).skip(skip).limit(limit).populate('assignedTo', 'name email').populate('createdBy', 'name email'),
+      Case.find(filter).sort({ updatedAt: -1 }).skip(skip).limit(limit)
+        .populate('assignedTo', 'name email')
+        .populate('createdBy', 'name email')
+        .populate('transactions', 'transactionId'),
       Case.countDocuments(filter),
     ]);
     return success(res, cases, 'Cases retrieved', 200, paginationMeta(total, page, limit));
@@ -119,7 +122,24 @@ exports.updateCase = async (req, res) => {
       caseDoc.status = status;
     }
     if (priority) caseDoc.priority = priority;
-    if (assignedTo !== undefined) caseDoc.assignedTo = assignedTo || null;
+    if (assignedTo !== undefined) {
+      const requestedAssignee = assignedTo
+        ? await User.findOne({ _id: assignedTo, isActive: true }).select('_id name')
+        : null;
+      if (assignedTo && !requestedAssignee) {
+        return error(res, 'Assigned user was not found or is inactive', 400);
+      }
+
+      const currentAssigneeId = caseDoc.assignedTo?.toString() || '';
+      const requestedAssigneeId = requestedAssignee?._id.toString() || '';
+      if (currentAssigneeId !== requestedAssigneeId) {
+        caseDoc.assignedTo = requestedAssignee?._id || null;
+        const assignmentEvent = requestedAssignee
+          ? `Case assigned to ${requestedAssignee.name}`
+          : 'Case assignment cleared';
+        timelineEvent.event = [timelineEvent.event, assignmentEvent].filter(Boolean).join(' | ');
+      }
+    }
     if (outcome) {
       caseDoc.outcome = outcome;
       caseDoc.resolutionNote = resolutionNote.trim();

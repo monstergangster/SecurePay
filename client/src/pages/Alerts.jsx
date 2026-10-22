@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   Search,
   RefreshCw,
-  ArrowRight,
+  Eye,
   ShieldCheck,
 } from 'lucide-react';
 import api from '../services/api';
@@ -49,7 +49,7 @@ export default function Alerts() {
 
       try {
         const dashRes = await api.get('/analytics/dashboard');
-        const summary = dashRes.data?.data?.overview;
+        const summary = dashRes.data?.data?.summary;
         setCounts(summary ? {
           critical: summary.criticalAlerts,
           high: summary.highAlerts,
@@ -93,60 +93,60 @@ export default function Alerts() {
             onClick={refreshAlerts}
             type="button"
             aria-label="Refresh threat alerts"
-            className="p-2.5 bg-slate-900 border border-slate-700 text-slate-300 hover:text-white rounded-lg transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400"
+            className="p-2.5 bg-white border border-slate-200 text-slate-700 hover:text-slate-900 rounded-lg transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-400"
           >
-            <RefreshCw size={16} className={loading ? 'animate-spin text-cyan-400' : ''} />
+            <RefreshCw size={16} className={loading ? 'animate-spin text-blue-700' : ''} />
           </button>
         )}
       />
 
       {/* 2. Urgent Threat Metrics Strip (Section 21) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="p-4 rounded-xl border border-red-900/60 bg-gradient-to-br from-red-950/40 to-slate-900/90 shadow-sm">
-          <p className="text-[11px] font-mono uppercase tracking-wider text-red-400 font-semibold mb-1">
+        <div className="p-4 rounded-xl border border-red-200 bg-red-50 shadow-sm">
+          <p className="text-[11px] font-mono uppercase tracking-wider text-red-700 font-semibold mb-1">
             Critical Threats
           </p>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-bold font-mono text-red-300">{counts?.critical ?? '—'}</span>
-            <span className="text-[10px] font-mono text-red-400 bg-red-950 px-1.5 py-0.5 rounded border border-red-800">
+            <span className="text-2xl font-bold font-mono text-red-700">{counts?.critical ?? '—'}</span>
+            <span className="text-[10px] font-mono text-red-700 bg-red-50 px-1.5 py-0.5 rounded border border-red-200">
               Urgent
             </span>
           </div>
         </div>
 
-        <div className="p-4 rounded-xl border border-orange-900/50 bg-gradient-to-br from-orange-950/30 to-slate-900/90 shadow-sm">
-          <p className="text-[11px] font-mono uppercase tracking-wider text-orange-400 font-semibold mb-1">
+        <div className="p-4 rounded-xl border border-orange-200 bg-orange-50 shadow-sm">
+          <p className="text-[11px] font-mono uppercase tracking-wider text-orange-700 font-semibold mb-1">
             High Severity
           </p>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-bold font-mono text-orange-300">
+            <span className="text-2xl font-bold font-mono text-orange-700">
               {counts?.high ?? '—'}
             </span>
-            <span className="text-[10px] font-mono text-orange-400 bg-orange-950 px-1.5 py-0.5 rounded border border-orange-800">
+            <span className="text-[10px] font-mono text-orange-700 bg-orange-50 px-1.5 py-0.5 rounded border border-orange-200">
               Monitor
             </span>
           </div>
         </div>
 
-        <div className="p-4 rounded-xl border border-sky-900/40 bg-gradient-to-br from-sky-950/25 to-slate-900/90 shadow-sm">
-          <p className="text-[11px] font-mono uppercase tracking-wider text-sky-400 font-semibold mb-1">
+        <div className="p-4 rounded-xl border border-sky-200 bg-sky-50 shadow-sm">
+          <p className="text-[11px] font-mono uppercase tracking-wider text-sky-700 font-semibold mb-1">
             Total Open Threats
           </p>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-bold font-mono text-sky-300">{counts?.open ?? '—'}</span>
-            <span className="text-[10px] font-mono text-sky-400 bg-sky-950 px-1.5 py-0.5 rounded border border-sky-800">
+            <span className="text-2xl font-bold font-mono text-sky-700">{counts?.open ?? '—'}</span>
+            <span className="text-[10px] font-mono text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded border border-sky-200">
               Queue
             </span>
           </div>
         </div>
 
-        <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/90 shadow-sm">
-          <p className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold mb-1">
+        <div className="p-4 rounded-xl border border-slate-200 bg-white/90 shadow-sm">
+          <p className="text-[11px] font-mono uppercase tracking-wider text-slate-600 font-semibold mb-1">
             All Monitored Alerts
           </p>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-bold font-mono text-slate-200">{meta?.total ?? (error ? '—' : 0)}</span>
-            <span className="text-[10px] font-mono text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">
+            <span className="text-2xl font-bold font-mono text-slate-800">{meta?.total ?? (error ? '—' : 0)}</span>
+            <span className="text-[10px] font-mono text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
               Historical
             </span>
           </div>
@@ -162,7 +162,7 @@ export default function Alerts() {
       {/* 3. Search & Filter Bar */}
       <div className="flex gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
-          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600" />
           <input
             type="text"
             placeholder="Search alerts by title or transaction ID…"
@@ -173,7 +173,7 @@ export default function Alerts() {
               setSearch(e.target.value);
               setPage(1);
             }}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
@@ -203,135 +203,100 @@ export default function Alerts() {
         </Select>
       </div>
 
-      {/* 4. Threat Cards List (Section 21 & 22) */}
-      <div className="space-y-3">
+      {/* Alert register */}
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         {error ? (
-          <div role="alert" className="p-8 rounded-2xl bg-slate-900 border border-rose-900/60 text-center">
-            <p className="text-sm font-semibold text-rose-300">Threat alerts could not be loaded</p>
-            <p className="mt-2 text-xs text-slate-400">{error}</p>
+          <div role="alert" className="p-8 text-center">
+            <p className="text-sm font-semibold text-rose-700">Threat alerts could not be loaded</p>
+            <p className="mt-2 text-xs text-slate-600">{error}</p>
             <button
               type="button"
               onClick={refreshAlerts}
-              className="mt-4 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-cyan-600 hover:bg-cyan-500 transition-colors"
+              className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
             >
               Retry
             </button>
           </div>
-        ) : loading ? (
-          Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
-              <Skeleton className="h-5 w-48" />
-              <Skeleton className="h-4 w-96" />
-            </div>
-          ))
-        ) : alerts.length === 0 ? (
-          <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800">
-            <EmptyState
-              icon={ShieldCheck}
-              title="No threats match current criteria"
-              description="No active alerts match your search or filter configuration. Adjust the filters to view historical alerts."
-            />
-          </div>
+        ) : alerts.length === 0 && !loading ? (
+          <EmptyState
+            icon={ShieldCheck}
+            title="No threats match current criteria"
+            description="No active alerts match your search or filter configuration. Adjust the filters to view historical alerts."
+          />
         ) : (
-          alerts.map((a) => {
-            const isCritical = a.severity === 'critical';
-            const tx = a.transactionId || {};
-            return (
-              <div
-                key={a._id}
-                className={`p-5 rounded-2xl border transition-all ${
-                  isCritical
-                    ? 'bg-gradient-to-r from-red-950/30 via-slate-900 to-slate-900 border-red-900/60 hover:border-red-800'
-                    : 'bg-slate-900/80 border-slate-800 hover:border-slate-700'
-                }`}
-              >
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  {/* Left: Threat Title & Details */}
-                  <div className="space-y-2 flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <RiskBadge level={a.severity} size="sm" />
-                      <StatusBadge status={a.status} size="sm" />
-                      <span className="text-xs font-mono font-semibold text-slate-400">
-                        {a.alertId}
-                      </span>
-                      <span className="text-[11px] font-mono text-slate-500">
-                        · {a.createdAt ? formatDistanceToNow(new Date(a.createdAt), { addSuffix: true }) : ''}
-                      </span>
-                    </div>
-
-                    <Link
-                      to={`/alerts/${a._id}`}
-                      className="text-base font-bold text-white hover:text-cyan-400 transition-colors block"
-                    >
-                      {a.title}
-                    </Link>
-
-                    <p className="text-xs text-slate-400 leading-relaxed max-w-3xl">
-                      {a.description || 'No additional threat description provided.'}
-                    </p>
-
-                    {/* Triggered Rule Chips */}
-                    {a.triggeredRules && a.triggeredRules.length > 0 && (
-                      <div className="flex items-center gap-2 flex-wrap pt-1">
-                        <span className="text-[10px] font-mono text-slate-500 uppercase">Triggers:</span>
-                        {a.triggeredRules.slice(0, 3).map((r, i) => (
-                          <span
-                            key={i}
-                            className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-950 text-slate-300 border border-slate-800"
-                          >
-                            {r.rule} <strong className="text-amber-400">+{r.score}</strong>
-                          </span>
-                        ))}
-                        {a.triggeredRules.length > 3 && (
-                          <span className="text-[11px] font-mono text-cyan-400">
-                            +{a.triggeredRules.length - 3} more
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Right: Transaction Exposure & Quick Action */}
-                  <div className="flex items-center gap-4 lg:gap-6 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-800">
-                    {tx.amount !== undefined && (
-                      <div className="text-left lg:text-right">
-                        <p className="text-[10px] font-mono uppercase text-slate-500">Exposure</p>
-                        <p className="text-lg font-bold font-mono text-slate-100">
-                          {formatINR(tx.amount, tx.currency || '')}
-                        </p>
-                        <p className="text-[11px] font-mono text-cyan-400">
-                          Cust: {tx.customerId || '—'}
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-2">
-                      <Link
-                        to={`/alerts/${a._id}`}
-                        className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-cyan-600 hover:bg-cyan-500 transition-colors flex items-center gap-1.5 shadow-md shadow-cyan-950"
-                      >
-                        Investigate <ArrowRight size={13} />
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[920px] text-left text-sm">
+              <thead className="bg-slate-50 text-xs font-semibold text-slate-600">
+                <tr className="border-b border-slate-200">
+                  <th scope="col" className="px-4 py-3">Severity</th>
+                  <th scope="col" className="px-4 py-3">Alert / reason</th>
+                  <th scope="col" className="px-4 py-3">Transaction</th>
+                  <th scope="col" className="px-4 py-3">Amount</th>
+                  <th scope="col" className="px-4 py-3">Status</th>
+                  <th scope="col" className="px-4 py-3">Detected</th>
+                  <th scope="col" className="px-4 py-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {loading ? (
+                  <tr><td colSpan={7} className="p-4"><Skeleton className="h-64" /></td></tr>
+                ) : alerts.map((alertRecord) => {
+                  const tx = alertRecord.transactionId || {};
+                  const reason = alertRecord.triggeredRules?.[0]?.description
+                    || alertRecord.description
+                    || alertRecord.title
+                    || 'No detection reason recorded.';
+                  return (
+                    <tr key={alertRecord._id} className="transition-colors hover:bg-slate-50">
+                      <td className="whitespace-nowrap px-4 py-3.5">
+                        <RiskBadge level={alertRecord.severity} size="sm" />
+                      </td>
+                      <td className="max-w-sm px-4 py-3.5">
+                        <Link
+                          to={`/alerts/${alertRecord._id}`}
+                          className="font-semibold text-slate-900 hover:text-blue-700"
+                        >
+                          {alertRecord.alertId}
+                        </Link>
+                        <p className="mt-0.5 line-clamp-2 text-xs text-slate-600">{reason}</p>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3.5">
+                        {tx._id ? (
+                          <Link to={`/transactions/${tx._id}`} className="font-mono text-xs text-blue-700 hover:underline">
+                            {tx.transactionId || 'View transaction'}
+                          </Link>
+                        ) : <span className="text-slate-500">—</span>}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3.5 font-medium text-slate-800">
+                        {tx.amount !== undefined ? formatINR(tx.amount, tx.currency || '') : '—'}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3.5">
+                        <StatusBadge status={alertRecord.status} size="sm" />
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3.5 text-xs text-slate-600">
+                        {alertRecord.createdAt ? formatDistanceToNow(new Date(alertRecord.createdAt), { addSuffix: true }) : '—'}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3.5 text-right">
+                        <Link
+                          to={`/alerts/${alertRecord._id}`}
+                          aria-label={`Review alert ${alertRecord.alertId}`}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                        >
+                          <Eye size={14} /> Review
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
+        <div className="border-t border-slate-200 px-4 pb-3 pt-2">
+          <Pagination meta={meta} onPageChange={setPage} />
+        </div>
       </div>
 
-      {/* Pagination */}
-      {!error && (
-        <Pagination
-          meta={meta}
-          onPageChange={(nextPage) => {
-            setLoading(true);
-            setError('');
-            setPage(nextPage);
-          }}
-        />
-      )}
     </div>
   );
 }

@@ -3,21 +3,13 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   ExternalLink,
-  ShieldAlert,
   ShieldCheck,
   Ban,
   FolderOpen,
   Cpu,
-  Clock,
-  Smartphone,
-  CreditCard,
-  User,
-  AlertTriangle,
   CheckCircle2,
-  FileText,
 } from 'lucide-react';
 import api from '../services/api';
-import { Badge } from '../components/ui/Badge';
 import { RiskBadge } from '../components/ui/RiskBadge';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Card, CardHeader, CardTitle } from '../components/ui/Card';
@@ -126,8 +118,8 @@ export default function TransactionDetail() {
 
   if (!data || !data.transaction) {
     return (
-      <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center">
-        <p role="alert" className="text-sm text-slate-300">{loadError || 'Transaction record not found.'}</p>
+      <div className="p-8 rounded-2xl bg-white border border-slate-200 text-center">
+        <p role="alert" className="text-sm text-slate-700">{loadError || 'Transaction record not found.'}</p>
         <div className="mt-4 flex justify-center gap-3">
           {loadError && (
             <Button size="sm" onClick={() => { setLoading(true); fetchTransaction(); }}>
@@ -149,21 +141,21 @@ export default function TransactionDetail() {
 
   // Generate explainable risk recommendation based on actual data
   let recommendation = hasRiskAssessment
-    ? 'Low risk profile. Transaction nominal for processing.'
+    ? 'The available signals are within the low-risk range. This score is a risk indicator, not a probability of fraud.'
     : 'A risk assessment is not available for this transaction.';
-  let recommendedAction = hasRiskAssessment ? 'Approve & Clear' : 'Review assessment results';
+  let recommendedAction = hasRiskAssessment ? 'Proceed after standard checks' : 'Review assessment results';
   if (isCritical) {
     recommendation =
-      'Multiple critical anomaly thresholds exceeded. Significant deviation from baseline behavior indicates high likelihood of unauthorized or compromised payment instrument.';
-    recommendedAction = 'Immediate Interception & Account Hold';
+      'Multiple critical risk thresholds were exceeded. Review the listed rule results and behavioral signals; the score is not a probability of fraud.';
+    recommendedAction = 'Review immediately; block if evidence confirms fraud';
   } else if (isHighRisk) {
     recommendation =
-      'Elevated risk score driven by heuristic signals or unusual behavioral attributes. Requires analyst verification before transaction completion.';
-    recommendedAction = 'Escalate to Fraud Investigation Case';
+      'The elevated score reflects triggered rules or unusual behavioral signals. Verify the evidence before deciding whether to approve or block this payment.';
+    recommendedAction = 'Verify the signals and consider opening an investigation';
   } else if (hasRiskAssessment && tx.riskScore >= 25) {
     recommendation =
-      'Moderate risk flags detected. Transaction exceeds minor monitoring thresholds.';
-    recommendedAction = 'Monitor Customer Activity';
+      'Some monitoring thresholds were crossed. Review the contributing signals; the score does not represent the probability that this transaction is fraudulent.';
+    recommendedAction = 'Review the signals and monitor customer activity';
   }
 
   return (
@@ -173,21 +165,21 @@ export default function TransactionDetail() {
         <div className="flex items-center gap-3">
           <Link
             to="/transactions"
-            className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
           >
             <ArrowLeft size={18} />
           </Link>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-bold text-white font-mono">{tx.transactionId}</h1>
+              <h1 className="text-xl font-bold text-slate-900 font-mono">{tx.transactionId}</h1>
               <StatusBadge status={tx.status} />
               {tx.isDemo && (
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-600">
                   DEMO DATA
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-600">
               Evaluated on {tx.timestamp ? format(new Date(tx.timestamp), 'PPpp') : '—'}
             </p>
           </div>
@@ -199,7 +191,7 @@ export default function TransactionDetail() {
             <button
               onClick={() => handleUpdateStatus('blocked')}
               disabled={updating}
-              className="px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-400 bg-rose-950/60 border border-rose-800/80 hover:bg-rose-900/60 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-50 transition-colors flex items-center gap-1.5 disabled:opacity-50"
             >
               <Ban size={13} /> Block Transaction
             </button>
@@ -209,7 +201,7 @@ export default function TransactionDetail() {
             <button
               onClick={() => handleUpdateStatus('approved')}
               disabled={updating}
-              className="px-3 py-1.5 rounded-xl text-xs font-semibold text-emerald-400 bg-emerald-950/60 border border-emerald-800/80 hover:bg-emerald-900/60 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-50 transition-colors flex items-center gap-1.5 disabled:opacity-50"
             >
               <ShieldCheck size={13} /> Approve
             </button>
@@ -224,7 +216,7 @@ export default function TransactionDetail() {
               });
               setShowCaseModal(true);
             }}
-            className="px-3 py-1.5 rounded-xl text-xs font-semibold text-cyan-300 bg-cyan-950/60 border border-cyan-800/80 hover:bg-cyan-900/60 transition-colors flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-50 transition-colors flex items-center gap-1.5"
           >
             <FolderOpen size={13} /> Open Investigation Case
           </button>
@@ -235,46 +227,46 @@ export default function TransactionDetail() {
       <div
         className={`p-6 rounded-2xl border backdrop-blur transition-all ${
           isCritical
-            ? 'bg-gradient-to-r from-red-950/40 via-slate-900 to-slate-900 border-red-900/60'
+            ? 'bg-red-50 border-red-200'
             : isHighRisk
-            ? 'bg-gradient-to-r from-orange-950/30 via-slate-900 to-slate-900 border-orange-900/50'
-            : 'bg-slate-900/80 border-slate-800'
+            ? 'bg-orange-50 border-orange-200'
+            : 'bg-white/80 border-slate-200'
         }`}
       >
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-3 flex-1">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="text-xs font-mono uppercase tracking-widest text-slate-400 font-semibold">
+              <span className="text-xs font-mono uppercase tracking-widest text-slate-600 font-semibold">
                 Risk Engine Evaluation
               </span>
               <RiskBadge level={tx.riskLevel} score={tx.riskScore} size="lg" />
-              <span className="text-xs font-mono text-cyan-400 bg-cyan-950/80 border border-cyan-800/60 px-2 py-0.5 rounded">
+              <span className="text-xs font-mono text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
                 Source: {tx.assessmentSource?.toUpperCase() || 'RULES_ENGINE'}
               </span>
             </div>
 
             <div className="flex items-baseline gap-3">
-              <span className="text-3xl lg:text-4xl font-extrabold text-white font-mono">
+              <span className="text-3xl lg:text-4xl font-extrabold text-slate-900 font-mono">
                 {formatINR(tx.amount, tx.currency || '')}
               </span>
-              <span className="text-sm font-mono text-slate-400 uppercase">
+              <span className="text-sm font-mono text-slate-600 uppercase">
                 via {tx.channel?.replace(/_/g, ' ') || 'card'}
               </span>
             </div>
 
-            <p className="text-xs text-slate-300 leading-relaxed max-w-2xl">
+            <p className="text-xs text-slate-700 leading-relaxed max-w-2xl">
               {recommendation}
             </p>
           </div>
 
           {/* Visual Risk Gauge */}
-          <div className="flex items-center gap-6 lg:border-l border-slate-800 lg:pl-8">
+          <div className="flex items-center gap-6 lg:border-l border-slate-200 lg:pl-8">
             <RiskScore score={tx.riskScore} size="xl" subtitle="Calculated Risk" />
           </div>
         </div>
 
         {/* Risk meter horizontal indicator */}
-        <div className="mt-5 pt-4 border-t border-slate-800/80">
+        <div className="mt-5 pt-4 border-t border-slate-200/80">
           <RiskMeter score={tx.riskScore} />
         </div>
       </div>
@@ -286,11 +278,11 @@ export default function TransactionDetail() {
           <CardHeader>
             <div>
               <CardTitle>WHY WAS THIS TRANSACTION FLAGGED?</CardTitle>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-600 mt-0.5">
                 Explainable heuristic rules and statistical signals contributing to risk score
               </p>
             </div>
-            <span className="text-xs font-mono font-bold text-amber-400 bg-amber-950/60 px-2.5 py-1 rounded border border-amber-800/60">
+            <span className="text-xs font-mono font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded border border-amber-200">
               {tx.riskReasons?.length || 0} Triggered Factors
             </span>
           </CardHeader>
@@ -300,25 +292,25 @@ export default function TransactionDetail() {
               {tx.riskReasons.map((r, i) => (
                 <div
                   key={i}
-                  className="p-4 rounded-xl bg-slate-950/70 border border-slate-800/90 hover:border-slate-700 transition-colors space-y-1.5"
+                  className="p-4 rounded-xl bg-white/70 border border-slate-200/90 hover:border-slate-200 transition-colors space-y-1.5"
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs font-mono font-bold text-cyan-400 tracking-wide">
+                    <span className="text-xs font-mono font-bold text-blue-700 tracking-wide">
                       {r.rule}
                     </span>
-                    <span className="text-xs font-mono font-extrabold text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800">
+                    <span className="text-xs font-mono font-extrabold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                       +{r.score} PTS
                     </span>
                   </div>
-                  <p className="text-xs text-slate-300 leading-relaxed">{r.description}</p>
+                  <p className="text-xs text-slate-700 leading-relaxed">{r.description}</p>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="p-8 text-center bg-slate-950/40 rounded-xl border border-slate-800/80">
-              <CheckCircle2 size={32} className="mx-auto text-emerald-400 mb-2" />
-              <p className="text-sm font-semibold text-slate-200">No Risk Rules Triggered</p>
-              <p className="text-xs text-slate-400 mt-1">
+            <div className="p-8 text-center bg-white/40 rounded-xl border border-slate-200/80">
+              <CheckCircle2 size={32} className="mx-auto text-emerald-700 mb-2" />
+              <p className="text-sm font-semibold text-slate-800">No Risk Rules Triggered</p>
+              <p className="text-xs text-slate-600 mt-1">
                 Transaction strictly complied with all active heuristic limits, amount thresholds, and velocity windows.
               </p>
             </div>
@@ -326,36 +318,36 @@ export default function TransactionDetail() {
 
           {/* ML Anomaly Model Insights (if ML Service was used) */}
           {tx.mlScore !== null && tx.mlScore !== undefined && (
-            <div className="mt-4 p-4 rounded-xl bg-gradient-to-br from-purple-950/30 via-slate-950 to-slate-950 border border-purple-900/50 space-y-2">
+            <div className="mt-4 p-4 rounded-xl bg-purple-50 border border-purple-200 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Cpu size={16} className="text-purple-400" />
-                  <span className="text-xs font-mono font-bold text-slate-200">
+                  <Cpu size={16} className="text-purple-700" />
+                  <span className="text-xs font-mono font-bold text-slate-800">
                     ML ISOLATION FOREST ANOMALY INFERENCE
                   </span>
                 </div>
                 <span
                   className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded border ${
                     tx.mlDecision === 'anomalous'
-                      ? 'bg-rose-950 text-rose-400 border-rose-800'
-                      : 'bg-emerald-950 text-emerald-400 border-emerald-800'
+                      ? 'bg-rose-50 text-rose-700 border-rose-200'
+                      : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                   }`}
                 >
                   {tx.mlDecision?.toUpperCase()}
                 </span>
               </div>
 
-              <div className="flex justify-between items-baseline text-xs text-slate-400">
+              <div className="flex justify-between items-baseline text-xs text-slate-600">
                 <span>Model Anomaly Score:</span>
-                <span className="text-sm font-mono font-extrabold text-purple-300">
+                <span className="text-sm font-mono font-extrabold text-purple-700">
                   {tx.mlScore} / 100
                 </span>
               </div>
 
               {tx.mlExplanation && tx.mlExplanation.length > 0 && (
-                <div className="pt-2 border-t border-purple-900/40 space-y-1">
-                  <p className="text-[11px] font-mono text-slate-400">Model Feature Contributions:</p>
-                  <ul className="text-xs text-slate-300 space-y-1 list-disc list-inside">
+                <div className="pt-2 border-t border-purple-200 space-y-1">
+                  <p className="text-[11px] font-mono text-slate-600">Model Feature Contributions:</p>
+                  <ul className="text-xs text-slate-700 space-y-1 list-disc list-inside">
                     {tx.mlExplanation.map((exp, idx) => (
                       <li key={idx}>{exp}</li>
                     ))}
@@ -373,13 +365,13 @@ export default function TransactionDetail() {
               <CardTitle>INVESTIGATOR ACTION ADVISORY</CardTitle>
             </CardHeader>
             <div className="space-y-4 text-xs">
-              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1.5">
+              <div className="p-3.5 rounded-xl bg-white/80 border border-slate-200 space-y-1.5">
                 <span className="text-[10px] font-mono uppercase text-slate-500 font-semibold block">
-                  Recommended Outcome
+                  Suggested analyst next step
                 </span>
-                <p className="text-sm font-bold text-cyan-400 font-mono">{recommendedAction}</p>
-                <p className="text-slate-400 leading-relaxed mt-1">
-                  Based on deterministic heuristic scoring ({tx.riskScore}/100) and customer baseline telemetry.
+                <p className="text-sm font-bold text-blue-700 font-mono">{recommendedAction}</p>
+                <p className="text-slate-600 leading-relaxed mt-1">
+                  The 0–100 score ranks transaction risk; it is not a probability of fraud.
                 </p>
               </div>
 
@@ -387,31 +379,31 @@ export default function TransactionDetail() {
                 <p className="text-[11px] font-mono uppercase text-slate-500 font-semibold">
                   Transaction Metadata
                 </p>
-                <div className="divide-y divide-slate-800/80 text-xs">
+                <div className="divide-y divide-slate-200 text-xs">
                   <div className="flex justify-between py-2">
                     <span className="text-slate-500">Customer ID</span>
                     <Link
                       to={`/customers/${tx.customerId}`}
-                      className="font-mono text-cyan-400 hover:underline"
+                      className="font-mono text-blue-700 hover:underline"
                     >
                       {tx.customerId}
                     </Link>
                   </div>
                   <div className="flex justify-between py-2">
                     <span className="text-slate-500">Merchant Category</span>
-                    <span className="font-mono text-slate-300 capitalize">{tx.merchantCategory || 'Standard'}</span>
+                    <span className="font-mono text-slate-700 capitalize">{tx.merchantCategory || 'Standard'}</span>
                   </div>
                   <div className="flex justify-between py-2">
                     <span className="text-slate-500">Merchant ID</span>
-                    <span className="font-mono text-slate-300">{tx.merchantId || 'MERCH-UNSPECIFIED'}</span>
+                    <span className="font-mono text-slate-700">{tx.merchantId || 'MERCH-UNSPECIFIED'}</span>
                   </div>
                   <div className="flex justify-between py-2">
                     <span className="text-slate-500">Ingestion Pipeline</span>
-                    <span className="font-mono text-slate-300 capitalize">{tx.ingestionSource?.replace(/_/g, ' ')}</span>
+                    <span className="font-mono text-slate-700 capitalize">{tx.ingestionSource?.replace(/_/g, ' ')}</span>
                   </div>
                   <div className="flex justify-between py-2">
                     <span className="text-slate-500">Review State</span>
-                    <span className="font-mono text-slate-300 capitalize">{tx.reviewStatus?.replace(/_/g, ' ')}</span>
+                    <span className="font-mono text-slate-700 capitalize">{tx.reviewStatus?.replace(/_/g, ' ')}</span>
                   </div>
                 </div>
               </div>
@@ -443,7 +435,7 @@ export default function TransactionDetail() {
           <CardHeader>
             <div>
               <CardTitle>ASSOCIATED THREAT ALERTS ({alerts.length})</CardTitle>
-              <p className="text-xs text-slate-400 mt-0.5">Deduplicated alerts triggered by this transaction</p>
+              <p className="text-xs text-slate-600 mt-0.5">Deduplicated alerts triggered by this transaction</p>
             </div>
           </CardHeader>
           <div className="space-y-2">
@@ -451,10 +443,10 @@ export default function TransactionDetail() {
               <Link
                 key={a._id}
                 to={`/alerts/${a._id}`}
-                className="flex items-center justify-between p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl hover:border-slate-700 transition-colors"
+                className="flex items-center justify-between p-3.5 bg-white/80 border border-slate-200 rounded-xl hover:border-slate-200 transition-colors"
               >
                 <div>
-                  <p className="text-sm font-semibold text-slate-200">{a.title}</p>
+                  <p className="text-sm font-semibold text-slate-800">{a.title}</p>
                   <p className="text-xs font-mono text-slate-500">{a.alertId}</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -472,11 +464,11 @@ export default function TransactionDetail() {
       <Modal isOpen={showCaseModal} onClose={() => setShowCaseModal(false)} title="Open Investigation Case">
         <div className="space-y-4">
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-400">Case Title *</label>
+            <label className="text-xs font-semibold text-slate-600">Case Title *</label>
             <input
               value={caseForm.title}
               onChange={(e) => setCaseForm({ ...caseForm, title: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -499,7 +491,7 @@ export default function TransactionDetail() {
             placeholder="Record initial fraud hypotheses, unusual velocity patterns, or customer contact notes..."
           />
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
             <Button variant="secondary" size="sm" onClick={() => setShowCaseModal(false)}>
               Cancel
             </Button>

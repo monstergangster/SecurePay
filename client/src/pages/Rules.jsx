@@ -90,43 +90,43 @@ export default function Rules() {
             type="button"
             onClick={fetchRules}
             aria-label="Refresh detection rules"
-            className="p-2 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white rounded-xl transition-colors"
+            className="p-2 bg-white border border-slate-200 text-slate-600 hover:text-slate-900 rounded-xl transition-colors"
           >
-            <RefreshCw size={13} className={loading ? 'animate-spin text-cyan-400' : ''} />
+            <RefreshCw size={13} className={loading ? 'animate-spin text-blue-700' : ''} />
           </button>
         )}
       />
-      {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-rose-700">{error}</p>}
 
       {/* 2. Top Engine Status Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800">
-          <p className="text-[11px] font-mono uppercase text-slate-400 font-semibold mb-1">Active Rules</p>
+        <div className="p-4 rounded-xl bg-white/90 border border-slate-200">
+          <p className="text-[11px] font-mono uppercase text-slate-600 font-semibold mb-1">Active Rules</p>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-bold font-mono text-emerald-400">
+            <span className="text-2xl font-bold font-mono text-emerald-700">
               {error ? '—' : activeCount} <span className="text-xs text-slate-500 font-normal">/ {error ? '—' : rules.length} configured</span>
             </span>
-            <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
+            <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
               Active
             </span>
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800">
-          <p className="text-[11px] font-mono uppercase text-slate-400 font-semibold mb-1">Cumulative Triggers</p>
+        <div className="p-4 rounded-xl bg-white/90 border border-slate-200">
+          <p className="text-[11px] font-mono uppercase text-slate-600 font-semibold mb-1">Cumulative Triggers</p>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-bold font-mono text-amber-400">{error ? '—' : totalTriggers.toLocaleString()}</span>
-            <span className="text-[10px] font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
+            <span className="text-2xl font-bold font-mono text-amber-700">{error ? '—' : totalTriggers.toLocaleString()}</span>
+            <span className="text-[10px] font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
               All Rules
             </span>
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800">
-          <p className="text-[11px] font-mono uppercase text-slate-400 font-semibold mb-1">Scoring Mode</p>
+        <div className="p-4 rounded-xl bg-white/90 border border-slate-200">
+          <p className="text-[11px] font-mono uppercase text-slate-600 font-semibold mb-1">Scoring Mode</p>
           <div className="flex items-baseline justify-between">
-            <span className="text-lg font-bold font-mono text-cyan-400">Hybrid (Heuristics + ML)</span>
-            <span className="text-[10px] font-mono text-cyan-400 bg-cyan-950 px-2 py-0.5 rounded border border-cyan-800">
+            <span className="text-lg font-bold font-mono text-blue-700">Hybrid (Heuristics + ML)</span>
+            <span className="text-[10px] font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
               65 / 35 Blend
             </span>
           </div>
@@ -134,11 +134,11 @@ export default function Rules() {
       </div>
 
       {/* 3. Rules Table */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-white/90 border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[750px]">
             <thead>
-              <tr className="border-b border-slate-800 text-left text-[11px] font-mono text-slate-400 uppercase tracking-wider">
+              <tr className="border-b border-slate-200 text-left text-[11px] font-mono text-slate-600 uppercase tracking-wider">
                 <th className="px-5 py-3.5">Rule Identity & Logic</th>
                 <th className="px-5 py-3.5">Category</th>
                 <th className="px-5 py-3.5">Weight Impact</th>
@@ -148,7 +148,7 @@ export default function Rules() {
                 <th className="px-5 py-3.5 text-right">Configure</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 text-xs">
+            <tbody className="divide-y divide-slate-200 text-xs">
               {loading ? (
                 <tr>
                   <td colSpan={7}>
@@ -158,8 +158,8 @@ export default function Rules() {
               ) : error ? (
                 <tr>
                   <td colSpan={7} className="p-6 text-center">
-                    <p className="text-sm text-rose-300">{error}</p>
-                    <button type="button" onClick={fetchRules} className="mt-3 text-xs font-semibold text-cyan-300 hover:text-cyan-200">
+                    <p className="text-sm text-rose-700">{error}</p>
+                    <button type="button" onClick={fetchRules} className="mt-3 text-xs font-semibold text-blue-700 hover:text-blue-700">
                       Retry
                     </button>
                   </td>
@@ -176,28 +176,28 @@ export default function Rules() {
                 </tr>
               ) : (
                 rules.map((r) => (
-                  <tr key={r._id} className="hover:bg-slate-800/40 transition-colors">
+                  <tr key={r._id} className="hover:bg-slate-100/40 transition-colors">
                     <td className="px-5 py-3.5 max-w-sm">
-                      <p className="text-sm font-semibold text-slate-100">{r.name}</p>
-                      <p className="text-[11px] font-mono text-cyan-400 mt-0.5">{r.ruleId}</p>
+                      <p className="text-sm font-semibold text-slate-900">{r.name}</p>
+                      <p className="text-[11px] font-mono text-blue-700 mt-0.5">{r.ruleId}</p>
                       {r.description && (
-                        <p className="text-xs text-slate-400 mt-1 line-clamp-1">{r.description}</p>
+                        <p className="text-xs text-slate-600 mt-1 line-clamp-1">{r.description}</p>
                       )}
                     </td>
 
                     <td className="px-5 py-3.5">
-                      <span className="font-mono uppercase text-xs px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-300">
+                      <span className="font-mono uppercase text-xs px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-700">
                         {r.category}
                       </span>
                     </td>
 
                     <td className="px-5 py-3.5">
-                      <span className="font-mono text-sm font-bold text-amber-400">
+                      <span className="font-mono text-sm font-bold text-amber-700">
                         +{r.weight} PTS
                       </span>
                     </td>
 
-                    <td className="px-5 py-3.5 font-mono text-slate-300">
+                    <td className="px-5 py-3.5 font-mono text-slate-700">
                       {r.threshold !== undefined && r.threshold !== null
                         ? r.thresholdUnit === 'INR' ? formatINR(r.threshold) : `${r.threshold} ${r.thresholdUnit || ''}`
                         : 'Dynamic Parameters'}
@@ -205,17 +205,17 @@ export default function Rules() {
 
                     <td className="px-5 py-3.5">
                       {r.isActive ? (
-                        <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-800/60 font-semibold font-mono">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 font-semibold font-mono">
                           <CheckCircle2 size={11} /> ACTIVE
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded-md border border-slate-700 font-semibold font-mono">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 font-semibold font-mono">
                           <XCircle size={11} /> DISABLED
                         </span>
                       )}
                     </td>
 
-                    <td className="px-5 py-3.5 font-mono font-bold text-slate-200">
+                    <td className="px-5 py-3.5 font-mono font-bold text-slate-800">
                       {r.triggerCount?.toLocaleString() || 0}
                     </td>
 
@@ -240,7 +240,7 @@ export default function Rules() {
       >
         <form onSubmit={handleSave} className="space-y-4">
           <div>
-            <span className="text-xs font-mono text-cyan-400 font-bold block mb-1">
+            <span className="text-xs font-mono text-blue-700 font-bold block mb-1">
               {selectedRule?.ruleId}
             </span>
             <Textarea
@@ -280,7 +280,7 @@ export default function Rules() {
             <option value="false">Disabled (Rule bypassed)</option>
           </Select>
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
             <Button type="button" variant="secondary" size="sm" onClick={() => setShowEdit(false)}>
               Cancel
             </Button>

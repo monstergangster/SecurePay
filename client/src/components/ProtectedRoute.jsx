@@ -4,8 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 export const ProtectedRoute = ({ roles }) => {
   const { user, loading } = useAuth();
   if (loading) return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-cyan-400" />
+    <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-400" />
     </div>
   );
   if (!user) return <Navigate to="/login" replace />;

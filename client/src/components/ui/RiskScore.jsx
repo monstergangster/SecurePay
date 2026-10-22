@@ -38,7 +38,7 @@ export const RiskScore = ({ score, size = 'lg', subtitle = 'Risk Score', showGau
       <div className="relative inline-flex items-center justify-center">
         <svg height={radius * 2} width={radius * 2} className="transform -rotate-90">
           <circle
-            stroke="#1e293b"
+            stroke="#e2e8f0"
             fill="transparent"
             strokeWidth={stroke}
             r={normalizedRadius}

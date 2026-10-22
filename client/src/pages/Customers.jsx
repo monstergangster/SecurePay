@@ -55,18 +55,18 @@ export default function Customers() {
             onClick={fetchCustomers}
             type="button"
             aria-label="Refresh customers"
-            className="p-2.5 bg-slate-900 border border-slate-700 text-slate-300 hover:text-white rounded-lg transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400"
+            className="p-2.5 bg-white border border-slate-200 text-slate-700 hover:text-slate-900 rounded-lg transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-400"
           >
-            <RefreshCw size={16} className={loading ? 'animate-spin text-cyan-400' : ''} />
+            <RefreshCw size={16} className={loading ? 'animate-spin text-blue-700' : ''} />
           </button>
         )}
       />
-      {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-rose-700">{error}</p>}
 
       {/* 2. Filters */}
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600" />
           <input
             type="text"
             placeholder="Search by Customer ID (e.g. CUST-001)…"
@@ -75,7 +75,7 @@ export default function Customers() {
               setSearch(e.target.value);
               setPage(1);
             }}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
@@ -96,11 +96,11 @@ export default function Customers() {
       </div>
 
       {/* 3. Table */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-white/90 border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[700px]">
             <thead>
-              <tr className="border-b border-slate-800 text-left text-[11px] font-mono text-slate-400 uppercase tracking-wider">
+              <tr className="border-b border-slate-200 text-left text-[11px] font-mono text-slate-600 uppercase tracking-wider">
                 <th className="px-5 py-3.5">Customer Identifier</th>
                 <th className="px-5 py-3.5">Risk Rating</th>
                 <th className="px-5 py-3.5">Cumulative Volume</th>
@@ -110,7 +110,7 @@ export default function Customers() {
                 <th className="px-5 py-3.5 text-right">Profile</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 text-xs">
+            <tbody className="divide-y divide-slate-200 text-xs">
               {loading ? (
                 <tr>
                   <td colSpan={7}>
@@ -120,8 +120,8 @@ export default function Customers() {
               ) : error ? (
                 <tr>
                   <td colSpan={7} className="p-6 text-center">
-                    <p className="text-sm text-rose-300">{error}</p>
-                    <button type="button" onClick={fetchCustomers} className="mt-3 text-xs font-semibold text-cyan-300 hover:text-cyan-200">
+                    <p className="text-sm text-rose-700">{error}</p>
+                    <button type="button" onClick={fetchCustomers} className="mt-3 text-xs font-semibold text-blue-700 hover:text-blue-700">
                       Retry
                     </button>
                   </td>
@@ -138,15 +138,15 @@ export default function Customers() {
                 </tr>
               ) : (
                 customers.map((c) => (
-                  <tr key={c._id} className="hover:bg-slate-800/40 transition-colors">
+                  <tr key={c._id} className="hover:bg-slate-100/40 transition-colors">
                     <td className="px-5 py-3.5">
                       <Link
                         to={`/customers/${c.customerId}`}
-                        className="font-mono text-cyan-400 hover:text-cyan-300 font-bold tracking-tight block"
+                        className="font-mono text-blue-700 hover:text-blue-700 font-bold tracking-tight block"
                       >
                         {c.customerId}
                       </Link>
-                      {c.displayName && <p className="text-[11px] text-slate-400 mt-0.5">{c.displayName}</p>}
+                      {c.displayName && <p className="text-[11px] text-slate-600 mt-0.5">{c.displayName}</p>}
                     </td>
 
                     <td className="px-5 py-3.5">
@@ -155,17 +155,17 @@ export default function Customers() {
                       </div>
                     </td>
 
-                    <td className="px-5 py-3.5 font-mono font-bold text-slate-100">
+                    <td className="px-5 py-3.5 font-mono font-bold text-slate-900">
                       {formatINR(c.totalTransactionAmount, c.currency || '')}
                     </td>
 
-                    <td className="px-5 py-3.5 font-mono text-slate-300">
+                    <td className="px-5 py-3.5 font-mono text-slate-700">
                       {c.transactionCount?.toLocaleString() || 0}
                     </td>
 
                     <td className="px-5 py-3.5">
                       {c.flaggedTransactionCount > 0 ? (
-                        <span className="font-mono font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800/60">
+                        <span className="font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                           {c.flaggedTransactionCount} flagged
                         </span>
                       ) : (
@@ -173,14 +173,14 @@ export default function Customers() {
                       )}
                     </td>
 
-                    <td className="px-5 py-3.5 text-slate-400 font-mono text-[11px] whitespace-nowrap">
+                    <td className="px-5 py-3.5 text-slate-600 font-mono text-[11px] whitespace-nowrap">
                       {c.lastTransactionAt ? format(new Date(c.lastTransactionAt), 'MMM dd, yyyy') : '—'}
                     </td>
 
                     <td className="px-5 py-3.5 text-right">
                       <Link
                         to={`/customers/${c.customerId}`}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-cyan-300 bg-cyan-950/60 border border-cyan-800/60 hover:bg-cyan-900/60 inline-flex items-center gap-1 transition-colors"
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-50 inline-flex items-center gap-1 transition-colors"
                       >
                         Profile <ArrowRight size={11} />
                       </Link>

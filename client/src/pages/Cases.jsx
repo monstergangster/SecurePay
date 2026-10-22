@@ -43,7 +43,7 @@ const NewCaseModal = ({ isOpen, onClose, onSuccess }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Open New Investigation Case">
       {error && (
-        <div className="mb-3 p-3 bg-rose-950/40 border border-rose-800/60 rounded-xl text-xs text-rose-400">
+        <div className="mb-3 p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700">
           {error}
         </div>
       )}
@@ -68,7 +68,7 @@ const NewCaseModal = ({ isOpen, onClose, onSuccess }) => {
           rows={4}
           placeholder="Document reason for case creation, affected accounts, and initial remediation..."
         />
-        <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+        <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
           <Button type="button" variant="secondary" size="sm" onClick={onClose}>
             Cancel
           </Button>
@@ -136,19 +136,19 @@ export default function Cases() {
             onClick={fetchCases}
             type="button"
             aria-label="Refresh cases"
-            className="p-2 bg-slate-900 border border-slate-800 text-slate-400 hover:text-white rounded-xl transition-colors"
+            className="p-2 bg-white border border-slate-200 text-slate-600 hover:text-slate-900 rounded-xl transition-colors"
           >
-            <RefreshCw size={13} className={loading ? 'animate-spin text-cyan-400' : ''} />
+            <RefreshCw size={13} className={loading ? 'animate-spin text-blue-700' : ''} />
           </button>
           </>
         )}
       />
-      {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
+      {error && <p role="alert" className="text-sm text-rose-700">{error}</p>}
 
       {/* 2. Search & Filter Bar */}
       <div className="flex gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
-          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600" />
           <input
             type="text"
             placeholder="Search investigation cases by title or case ID…"
@@ -157,7 +157,7 @@ export default function Cases() {
               setSearch(e.target.value);
               setPage(1);
             }}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
@@ -188,12 +188,13 @@ export default function Cases() {
       </div>
 
       {/* 3. Cases Table / List */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-white/90 border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[700px]">
             <thead>
-              <tr className="border-b border-slate-800 text-left text-[11px] font-mono text-slate-400 uppercase tracking-wider">
+              <tr className="border-b border-slate-200 text-left text-[11px] font-mono text-slate-600 uppercase tracking-wider">
                 <th className="px-5 py-3.5">Case Title & ID</th>
+                <th className="px-5 py-3.5">Linked Transaction</th>
                 <th className="px-5 py-3.5">Priority</th>
                 <th className="px-5 py-3.5">Status</th>
                 <th className="px-5 py-3.5">Outcome</th>
@@ -202,25 +203,25 @@ export default function Cases() {
                 <th className="px-5 py-3.5 text-right">Inspect</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 text-xs">
+            <tbody className="divide-y divide-slate-200 text-xs">
               {loading ? (
                 <tr>
-                  <td colSpan={7}>
-                    <TableSkeleton rows={6} cols={7} />
+                  <td colSpan={8}>
+                    <TableSkeleton rows={6} cols={8} />
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={7} className="p-6 text-center">
-                    <p className="text-sm text-rose-300">{error}</p>
-                    <button type="button" onClick={fetchCases} className="mt-3 text-xs font-semibold text-cyan-300 hover:text-cyan-200">
+                  <td colSpan={8} className="p-6 text-center">
+                    <p className="text-sm text-rose-700">{error}</p>
+                    <button type="button" onClick={fetchCases} className="mt-3 text-xs font-semibold text-blue-700 hover:text-blue-700">
                       Retry
                     </button>
                   </td>
                 </tr>
               ) : cases.length === 0 ? (
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={8}>
                     <EmptyState
                       icon={FolderOpen}
                       title="No investigation cases match your filters"
@@ -230,15 +231,29 @@ export default function Cases() {
                 </tr>
               ) : (
                 cases.map((c) => (
-                  <tr key={c._id} className="hover:bg-slate-800/40 transition-colors">
+                  <tr key={c._id} className="hover:bg-slate-100/40 transition-colors">
                     <td className="px-5 py-3.5 max-w-sm">
                       <Link
                         to={`/cases/${c._id}`}
-                        className="text-sm font-semibold text-slate-100 hover:text-cyan-400 transition-colors line-clamp-1 block"
+                        className="text-sm font-semibold text-slate-900 hover:text-blue-700 transition-colors line-clamp-1 block"
                       >
                         {c.title}
                       </Link>
-                      <p className="text-[11px] text-slate-400 font-mono mt-0.5">{c.caseId}</p>
+                      <p className="text-[11px] text-slate-600 font-mono mt-0.5">{c.caseId}</p>
+                    </td>
+
+                    <td className="px-5 py-3.5">
+                      {c.transactions?.length ? (
+                        <Link
+                          to={`/transactions/${c.transactions[0]._id}`}
+                          className="font-mono text-blue-700 hover:underline"
+                        >
+                          {c.transactions[0].transactionId || 'View transaction'}
+                          {c.transactions.length > 1 && (
+                            <span className="ml-1 text-slate-500">+{c.transactions.length - 1}</span>
+                          )}
+                        </Link>
+                      ) : <span className="text-slate-500">—</span>}
                     </td>
 
                     <td className="px-5 py-3.5">
@@ -253,22 +268,22 @@ export default function Cases() {
                       {c.outcome ? (
                         <StatusBadge status={c.outcome} size="sm" />
                       ) : (
-                        <span className="text-[11px] font-mono text-slate-400">Pending Filing</span>
+                        <span className="text-[11px] font-mono text-slate-600">Pending Filing</span>
                       )}
                     </td>
 
-                    <td className="px-5 py-3.5 text-slate-300 font-medium">
+                    <td className="px-5 py-3.5 text-slate-700 font-medium">
                       {c.assignedTo?.name || 'Unassigned Queue'}
                     </td>
 
-                    <td className="px-5 py-3.5 text-slate-400 font-mono text-[11px] whitespace-nowrap">
+                    <td className="px-5 py-3.5 text-slate-600 font-mono text-[11px] whitespace-nowrap">
                       {c.updatedAt ? formatDistanceToNow(new Date(c.updatedAt), { addSuffix: true }) : '—'}
                     </td>
 
                     <td className="px-5 py-3.5 text-right">
                       <Link
                         to={`/cases/${c._id}`}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-cyan-300 bg-cyan-950/60 border border-cyan-800/60 hover:bg-cyan-900/60 inline-flex items-center gap-1 transition-colors"
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-50 inline-flex items-center gap-1 transition-colors"
                       >
                         Workspace <ArrowRight size={11} />
                       </Link>
