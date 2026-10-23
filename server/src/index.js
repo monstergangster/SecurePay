@@ -40,6 +40,22 @@ if (process.env.NODE_ENV !== 'test') {
 
 app.use('/api', apiLimiter);
 
+if (process.env.VERCEL) {
+  let runtimeConfigValidated = false;
+  app.use(async (req, res, next) => {
+    try {
+      if (!runtimeConfigValidated) {
+        validateSecurityEnvironment();
+        runtimeConfigValidated = true;
+      }
+      await connectDB();
+      next();
+    } catch (error) {
+      next(error);
+    }
+  });
+}
+
 // Routes
 app.use('/api/v1/auth', require('./routes/auth'));
 app.use('/api/v1/users', require('./routes/users'));
