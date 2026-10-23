@@ -104,10 +104,6 @@ router.get('/dashboard', async (req, res) => {
       },
       { $sort: { _id: 1 } },
     ]);
-    if (nonINRTransactionCount) {
-      volumeData = volumeData.map(day => ({ ...day, amount: null }));
-    }
-
     const riskDistribution = await Transaction.aggregate([
       { $group: { _id: '$riskLevel', count: { $sum: 1 } } },
     ]);
@@ -147,9 +143,9 @@ router.get('/dashboard', async (req, res) => {
           highAlerts,
           openCases,
           resolvedCases,
-          totalVolume: nonINRTransactionCount ? null : Math.round(fin.totalVolume || 0),
-          moneyAtRisk: nonINRTransactionCount ? null : Math.round(fin.moneyAtRisk || 0),
-          moneyProtected: nonINRTransactionCount ? null : Math.round(fin.moneyProtected || 0),
+          totalVolume: Math.round(fin.totalVolume || 0),
+          moneyAtRisk: Math.round(fin.moneyAtRisk || 0),
+          moneyProtected: Math.round(fin.moneyProtected || 0),
           currencyMigrationRequired: nonINRTransactionCount > 0,
           nonINRTransactionCount,
           avgRiskScore: avgScore,

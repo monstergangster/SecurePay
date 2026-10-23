@@ -213,14 +213,18 @@ export default function Analytics() {
             <InsightCard
               title="Total Exposure at Risk"
               highlight={formatINR(moneyAtRisk)}
-              subtitle="Cumulative value in flagged/high-risk state"
+              subtitle={dashSummary?.nonINRTransactionCount > 0
+                ? `INR transactions only · ${dashSummary.nonINRTransactionCount} non-INR excluded`
+                : 'Cumulative INR value in flagged/high-risk state'}
               icon={Zap}
               variant="cyan"
             />
             <InsightCard
               title="Intercepted Loss"
               highlight={formatINR(moneyProtected)}
-              subtitle="Fraudulent capital blocked by security rules"
+              subtitle={dashSummary?.nonINRTransactionCount > 0
+                ? `INR transactions only · ${dashSummary.nonINRTransactionCount} non-INR excluded`
+                : 'INR value blocked by security rules'}
               icon={ShieldCheck}
               variant="purple"
             />

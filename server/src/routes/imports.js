@@ -14,10 +14,10 @@ const auditLogger = require('../utils/auditLogger');
 const { v4: uuidv4 } = require('uuid');
 const logger = require('../config/logger');
 const { formatINR, normalizeAmount, normalizeCurrency } = require('../utils/currency');
+const { REQUIRED_FIELDS, normalizeImportHeader } = require('../utils/importCsv');
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
-const REQUIRED_FIELDS = ['transactionId', 'customerId', 'amount', 'currency', 'timestamp'];
 const VALID_CHANNELS = ['card', 'bank_transfer', 'upi', 'wallet', 'crypto', 'other'];
 const MAX_ROWS = 5000;
 
@@ -31,7 +31,12 @@ router.post('/csv', authorize('admin', 'analyst'), importLimiter, upload.single(
   try {
     let records;
     try {
-      records = parse(req.file.buffer, { columns: true, skip_empty_lines: true, trim: true });
+      records = parse(req.file.buffer, {
+        bom: true,
+        columns: (headers) => headers.map(normalizeImportHeader),
+        skip_empty_lines: true,
+        trim: true,
+      });
     } catch (parseErr) {
       return error(res, `CSV parse error: ${parseErr.message}`, 400);
     }
@@ -41,7 +46,15 @@ router.post('/csv', authorize('admin', 'analyst'), importLimiter, upload.single(
 
     const headers = Object.keys(records[0]);
     const missingFields = REQUIRED_FIELDS.filter((f) => !headers.includes(f));
-    if (missingFields.length) return error(res, `Missing required columns: ${missingFields.join(', ')}`, 400);
+    if (missingFields.length) {
+      const foundColumns = headers.length ? headers.join(', ') : 'No column headers found';
+      return error(
+        res,
+        `Missing required columns: ${missingFields.join(', ')}. Columns found: ${foundColumns}. Download the SecurePay CSV template for the expected format.`,
+        400,
+        { missingColumns: missingFields, foundColumns: headers, requiredColumns: REQUIRED_FIELDS }
+      );
+    }
 
     const toInsert = [];
     for (let i = 0; i < records.length; i++) {

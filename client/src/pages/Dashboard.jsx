@@ -192,7 +192,9 @@ export default function Dashboard() {
             <MetricCard
               title="Amount at Risk"
               value={summary.moneyAtRisk === undefined ? '—' : formatINR(summary.moneyAtRisk, summary.currency || 'INR')}
-              subtext={summary.currencyMigrationRequired ? 'Mixed currencies require review' : 'Exposure from flagged payments'}
+              subtext={summary.nonINRTransactionCount > 0
+                ? `INR transactions only · ${summary.nonINRTransactionCount} non-INR excluded`
+                : 'Exposure from flagged payments'}
               icon={IndianRupee}
               variant="danger"
             />

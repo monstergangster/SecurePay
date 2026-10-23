@@ -4,6 +4,7 @@ import {
   FileSpreadsheet,
   CheckCircle2,
   Play,
+  AlertCircle,
 } from 'lucide-react';
 import api from '../services/api';
 import { Card, CardHeader, CardTitle } from '../components/ui/Card';
@@ -15,11 +16,14 @@ export default function Import() {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [importSummary, setImportSummary] = useState(null);
+  const [importError, setImportError] = useState(null);
   const [simulating, setSimulating] = useState(false);
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
+      setImportError(null);
+      setImportSummary(null);
     }
   };
 
@@ -28,6 +32,7 @@ export default function Import() {
     if (!file) return;
     setUploading(true);
     setImportSummary(null);
+    setImportError(null);
 
     const formData = new FormData();
     formData.append('file', file);
@@ -40,7 +45,13 @@ export default function Import() {
       toast.success('Batch transaction file ingested and assessed.');
       setFile(null);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'CSV ingestion failed');
+      const responseData = err.response?.data;
+      setImportError({
+        message: responseData?.message || 'CSV ingestion failed. Check the file format and try again.',
+        missingColumns: responseData?.errors?.missingColumns || [],
+        foundColumns: responseData?.errors?.foundColumns || [],
+      });
+      toast.error(responseData?.message || 'CSV ingestion failed');
     } finally {
       setUploading(false);
     }
@@ -125,6 +136,49 @@ export default function Import() {
               </Button>
             </div>
           </form>
+
+          {importError && (
+            <div
+              role="alert"
+              aria-live="assertive"
+              className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900"
+            >
+              <div className="flex items-start gap-2.5">
+                <AlertCircle size={18} className="mt-0.5 flex-shrink-0 text-rose-700" />
+                <div className="min-w-0">
+                  <p className="font-semibold">
+                    {importError.missingColumns.length
+                      ? 'This file is missing required columns'
+                      : 'The file could not be imported'}
+                  </p>
+                  <p className="mt-1 break-words">{importError.message}</p>
+                  {importError.missingColumns.length > 0 && (
+                    <>
+                      <p className="mt-2 font-medium">Add these columns to the CSV header:</p>
+                      <ul className="mt-1 flex flex-wrap gap-1.5">
+                        {importError.missingColumns.map((column) => (
+                          <li
+                            key={column}
+                            className="rounded-md border border-rose-200 bg-white px-2 py-0.5 font-mono text-xs"
+                          >
+                            {column}
+                          </li>
+                        ))}
+                      </ul>
+                      {importError.foundColumns.length > 0 && (
+                        <p className="mt-2 text-xs text-rose-800">
+                          Columns detected: <span className="font-mono">{importError.foundColumns.join(', ')}</span>
+                        </p>
+                      )}
+                      <p className="mt-2 text-xs text-rose-800">
+                        Keep the required column names in the header row. Capitalization, spaces, and underscores are accepted.
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {importSummary && (
             <div className="mt-5 p-4 bg-white border border-slate-200 rounded-2xl space-y-2.5">
